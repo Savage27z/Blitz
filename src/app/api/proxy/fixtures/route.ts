@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getValidJwt } from "@/lib/txodds/auth";
 
 export async function GET(req: NextRequest) {
-  const jwt = process.env.TXODDS_JWT;
   const apiToken = process.env.TXODDS_API_TOKEN;
   const base = process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
     ? "https://txline.txodds.com"
     : "https://txline-dev.txodds.com";
 
-  if (!jwt || !apiToken) {
+  if (!apiToken) {
     return NextResponse.json({ error: "TxODDS credentials not configured" }, { status: 500 });
   }
 
@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     : `${base}/api/fixtures/snapshot`;
 
   try {
+    const jwt = await getValidJwt();
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${jwt}`,
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (e) {
-    return NextResponse.json({ error: "Failed to fetch fixtures" }, { status: 502 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || "Failed to fetch fixtures" }, { status: 502 });
   }
 }

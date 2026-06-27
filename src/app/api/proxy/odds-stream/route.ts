@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
+import { getValidJwt } from "@/lib/txodds/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const jwt = process.env.TXODDS_JWT;
   const apiToken = process.env.TXODDS_API_TOKEN;
   const base = process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
     ? "https://txline.txodds.com"
     : "https://txline-dev.txodds.com";
 
-  if (!jwt || !apiToken) {
+  if (!apiToken) {
     return new Response("TxODDS credentials not configured", { status: 500 });
   }
 
@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     : `${base}/api/odds/stream`;
 
   try {
+    const jwt = await getValidJwt();
     const upstream = await fetch(url, {
       headers: {
         Authorization: `Bearer ${jwt}`,
