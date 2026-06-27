@@ -46,90 +46,89 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
   const minute = getMinuteDisplay(fixture);
 
   return (
-    <div>
-      <Link
-        href={`/app/match/${fixture.fixtureId}`}
-        className="group relative block overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] transition-all duration-300 hover:border-white/[0.12] hover:bg-white/[0.03] hover:shadow-lg hover:shadow-black/20"
-      >
-        {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-white/[0.04] px-5 py-2.5">
-          <div className="flex items-center gap-2">
-            {isLive && (
-              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
-            )}
-            <span className="font-mono text-[0.6rem] uppercase tracking-wider text-muted-light">
-              {getStatusLabel(fixture)}
+    <Link
+      href={`/app/match/${fixture.fixtureId}`}
+      className="group relative block overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:translate-y-[-1px]"
+    >
+      {/* Live top accent */}
+      {isLive && (
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+      )}
+
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-5 py-3">
+        <div className="flex items-center gap-2">
+          {isLive && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-40" />
+              <span className="inline-flex h-2 w-2 rounded-full bg-red-500" />
             </span>
-            {minute && (
-              <span className="font-mono text-[0.6rem] text-amber-primary">{minute}</span>
-            )}
-          </div>
-          <span className="font-mono text-[0.55rem] uppercase tracking-wider text-amber-primary/70">
-            Group Stage
+          )}
+          <span className="font-mono text-[0.65rem] uppercase tracking-wider text-white/40">
+            {getStatusLabel(fixture)}
           </span>
+          {minute && (
+            <span className="font-mono text-[0.65rem] font-semibold text-amber-primary">{minute}</span>
+          )}
         </div>
+        <span className="rounded-full border border-amber-primary/20 bg-amber-primary/5 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-wider text-amber-primary/80">
+          {fixture.competitionName || "World Cup"}
+        </span>
+      </div>
 
-        {/* Main content */}
-        <div className="px-5 py-4">
-          {/* Teams + Score */}
-          <div className="flex items-center">
-            {/* Team 1 */}
-            <div className="flex flex-1 flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{getFlag(fixture.participant1Name)}</span>
-                <span className="text-[0.875rem] font-medium text-offwhite">
-                  {fixture.participant1Name}
-                </span>
-              </div>
+      {/* Main content */}
+      <div className="px-5 py-5">
+        <div className="flex items-center">
+          {/* Team 1 */}
+          <div className="flex flex-1 items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
+              {getFlag(fixture.participant1Name)}
             </div>
-
-            {/* Score */}
-            <div className="mx-3 flex items-center gap-2">
-              {isUpcoming ? (
-                <span className="text-[0.75rem] text-muted">vs</span>
-              ) : (
-                <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1.5 font-mono text-xl font-bold text-offwhite">
-                  <span>{p1Goals}</span>
-                  <span className="text-[0.75rem] text-muted">:</span>
-                  <span>{p2Goals}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Team 2 */}
-            <div className="flex flex-1 flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[0.875rem] font-medium text-offwhite">
-                  {fixture.participant2Name}
-                </span>
-                <span className="text-xl">{getFlag(fixture.participant2Name)}</span>
-              </div>
-            </div>
+            <span className="text-[0.9375rem] font-semibold text-offwhite">
+              {fixture.participant1Name}
+            </span>
           </div>
-        </div>
 
-        {/* Bottom bar */}
-        <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5">
-          <span className="text-[0.625rem] text-muted">
-            {fixture.competitionName || "World Cup 2026"}
-          </span>
-          <div className="flex items-center gap-3">
-            {isLive && (
-              <span className="rounded-full bg-amber-primary/10 px-2 py-0.5 text-[0.6rem] font-medium text-amber-primary">
-                4 markets
+          {/* Score / VS */}
+          <div className="mx-4">
+            {isUpcoming ? (
+              <span className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-[0.75rem] font-medium text-white/30">
+                vs
               </span>
+            ) : (
+              <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/30 px-4 py-2 font-mono text-xl font-bold text-offwhite">
+                <span>{p1Goals}</span>
+                <span className="text-[0.75rem] text-white/20">–</span>
+                <span>{p2Goals}</span>
+              </div>
             )}
-            <span className="text-[0.65rem] font-medium text-amber-primary opacity-0 transition-all duration-200 group-hover:opacity-100">
-              {isCompleted ? "Results →" : isLive ? "Trade →" : "Preview →"}
+          </div>
+
+          {/* Team 2 */}
+          <div className="flex flex-1 items-center justify-end gap-3">
+            <span className="text-[0.9375rem] font-semibold text-offwhite">
+              {fixture.participant2Name}
             </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
+              {getFlag(fixture.participant2Name)}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Live gradient accent */}
-        {isLive && (
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+      {/* Bottom bar */}
+      <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5">
+        {isLive ? (
+          <span className="rounded-full bg-amber-primary/10 px-2.5 py-0.5 text-[0.625rem] font-semibold text-amber-primary">
+            4 markets live
+          </span>
+        ) : (
+          <span className="text-[0.625rem] text-white/20">Group Stage</span>
         )}
-      </Link>
-    </div>
+        <span className="text-[0.6875rem] font-medium text-amber-primary opacity-0 transition-all duration-200 group-hover:opacity-100">
+          {isCompleted ? "View results →" : isLive ? "Trade now →" : "Preview →"}
+        </span>
+      </div>
+    </Link>
   );
 }
