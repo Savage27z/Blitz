@@ -15,11 +15,12 @@ const PHASE_LABELS: Record<string, string> = {
   PE: "Penalties",
 };
 
-export default function MatchHeader() {
+export default function MatchHeader({ loading = false }: { loading?: boolean }) {
   const { team1Name, team2Name, score, gamePhase, matchMinute, connected } =
     useMarketStore();
 
   const isLive = ["H1", "H2", "ET1", "ET2", "PE"].includes(gamePhase);
+  const isLoading = loading || team1Name === "…";
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
@@ -68,11 +69,13 @@ export default function MatchHeader() {
         {/* Team 1 */}
         <div className="flex flex-1 items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] text-3xl shadow-inner">
-            {getFlag(team1Name)}
+            {isLoading ? "…" : getFlag(team1Name)}
           </div>
           <div>
-            <p className="text-[1.125rem] font-semibold tracking-tight text-offwhite">{team1Name}</p>
-            <p className="mt-0.5 text-[0.65rem] text-white/30">Home</p>
+            <p className={`text-[1.125rem] font-semibold tracking-tight text-offwhite ${isLoading ? "animate-pulse text-white/30" : ""}`}>
+              {isLoading ? "Loading…" : team1Name}
+            </p>
+            {!isLoading && <p className="mt-0.5 text-[0.65rem] text-white/30">Home</p>}
           </div>
         </div>
 
@@ -88,11 +91,13 @@ export default function MatchHeader() {
         {/* Team 2 */}
         <div className="flex flex-1 items-center justify-end gap-4">
           <div className="text-right">
-            <p className="text-[1.125rem] font-semibold tracking-tight text-offwhite">{team2Name}</p>
-            <p className="mt-0.5 text-[0.65rem] text-white/30">Away</p>
+            <p className={`text-[1.125rem] font-semibold tracking-tight text-offwhite ${isLoading ? "animate-pulse text-white/30" : ""}`}>
+              {isLoading ? "Loading…" : team2Name}
+            </p>
+            {!isLoading && <p className="mt-0.5 text-[0.65rem] text-white/30">Away</p>}
           </div>
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] text-3xl shadow-inner">
-            {getFlag(team2Name)}
+            {isLoading ? "…" : getFlag(team2Name)}
           </div>
         </div>
       </div>

@@ -3,9 +3,7 @@
 import Link from "next/link";
 import type { Fixture } from "@/lib/txodds/types";
 import { getFlag } from "@/lib/flags";
-
-const LIVE_STATES = ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"];
-const COMPLETED_STATES = ["F", "FET", "FPE", "WET", "WPE"];
+import { getFixtureCategory } from "@/hooks/useFixtures";
 
 function getMinuteDisplay(fixture: Fixture): string | null {
   const s = fixture.statusId || "NS";
@@ -18,7 +16,12 @@ function getMinuteDisplay(fixture: Fixture): string | null {
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function getStatusLabel(fixture: Fixture): string {
+  const category = getFixtureCategory(fixture);
   const s = fixture.statusId || "NS";
+
+  if (category === "live" && s === "NS") return "Live";
+  if (category === "completed" && s === "NS") return "Full Time";
+
   if (s === "NS") {
     const d = new Date(fixture.startTime);
     if (isNaN(d.getTime())) return "TBD";
@@ -38,9 +41,10 @@ function getStatusLabel(fixture: Fixture): string {
 }
 
 export default function MatchCard({ fixture }: { fixture: Fixture }) {
-  const isLive = LIVE_STATES.includes(fixture.statusId || "NS");
-  const isCompleted = COMPLETED_STATES.includes(fixture.statusId || "NS");
-  const isUpcoming = !isLive && !isCompleted;
+  const category = getFixtureCategory(fixture);
+  const isLive = category === "live";
+  const isCompleted = category === "completed";
+  const isUpcoming = category === "upcoming";
   const p1Goals = fixture.score?.Participant1?.Total?.Goals ?? (isUpcoming ? "" : "0");
   const p2Goals = fixture.score?.Participant2?.Total?.Goals ?? (isUpcoming ? "" : "0");
   const minute = getMinuteDisplay(fixture);

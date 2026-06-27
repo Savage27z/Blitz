@@ -17,14 +17,25 @@ export default function MatchPage() {
   const params = useParams();
   const fixtureId = params.fixtureId ? Number(params.fixtureId) : null;
   const [demoMode, setDemoMode] = useState(false);
+  const [fixtureLoaded, setFixtureLoaded] = useState(false);
   const connected = useMarketStore((s) => s.connected);
 
   useEffect(() => {
     if (!fixtureId) return;
 
-    const { setFixtureInfo } = useMarketStore.getState();
+    setFixtureLoaded(false);
+    const store = useMarketStore.getState();
+    store.setFixtureInfo(fixtureId, "…", "…");
+    useMarketStore.setState({
+      score: [0, 0],
+      gamePhase: "NS",
+      matchMinute: 0,
+      events: [],
+      activeMarkets: [],
+      settledMarkets: [],
+      connected: false,
+    });
 
-    // Fetch fixture info from API to populate header
     async function loadFixture() {
       try {
         const res = await fetch("/api/proxy/fixtures");
@@ -35,12 +46,12 @@ export default function MatchPage() {
         if (fixture) {
           const p1 = fixture.Participant1 ?? fixture.participant1Name ?? "Team A";
           const p2 = fixture.Participant2 ?? fixture.participant2Name ?? "Team B";
-          setFixtureInfo(fixtureId!, p1, p2);
-        } else {
-          setFixtureInfo(fixtureId!, "Team A", "Team B");
+          store.setFixtureInfo(fixtureId!, p1, p2);
         }
       } catch {
-        setFixtureInfo(fixtureId!, "Team A", "Team B");
+        // keep placeholder
+      } finally {
+        setFixtureLoaded(true);
       }
     }
 
@@ -53,7 +64,7 @@ export default function MatchPage() {
 
   return (
     <div className="space-y-6">
-      <MatchHeader />
+      <MatchHeader loading={!fixtureLoaded} />
 
       {/* Demo mode toggle - fallback for when no live matches */}
       {!connected && (

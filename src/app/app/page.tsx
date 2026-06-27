@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useFixtures, FixtureFilter } from "@/hooks/useFixtures";
+import { useFixtures, FixtureFilter, isFixtureLive, getFixtureCategory } from "@/hooks/useFixtures";
 import MatchCard from "@/components/app/MatchCard";
 import DashboardHero from "@/components/app/DashboardHero";
 
@@ -14,9 +14,19 @@ const TABS: { id: FixtureFilter; label: string }[] = [
 export default function AppPage() {
   const { fixtures, allFixtures, loading, error, filter, setFilter } = useFixtures();
 
-  const liveCount = allFixtures.filter((f) =>
-    ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"].includes(f.statusId || "NS")
-  ).length;
+  const now = Date.now();
+  const liveCount = allFixtures.filter((f) => isFixtureLive(f, now)).length;
+  const tabCounts = {
+    live: allFixtures.filter((f) => getFixtureCategory(f, now) === "live").length,
+    upcoming: allFixtures.filter((f) => getFixtureCategory(f, now) === "upcoming").length,
+    completed: allFixtures.filter((f) => getFixtureCategory(f, now) === "completed").length,
+  };
+
+  const emptyMessages: Record<FixtureFilter, string> = {
+    live: "No live matches right now — check Upcoming for kickoff times",
+    upcoming: "No upcoming matches scheduled",
+    completed: "No completed matches yet",
+  };
 
   return (
     <div>
@@ -35,6 +45,13 @@ export default function AppPage() {
             }`}
           >
             {tab.label}
+            {!loading && tabCounts[tab.id] > 0 && (
+              <span className={`ml-1.5 font-mono text-[0.65rem] ${
+                filter === tab.id ? "text-warm-dark/60" : "text-white/30"
+              }`}>
+                {tabCounts[tab.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -67,7 +84,7 @@ export default function AppPage() {
 
       {!loading && !error && fixtures.length === 0 && (
         <div className="py-20 text-center">
-          <p className="text-muted">No {filter} matches found</p>
+          <p className="text-muted">{emptyMessages[filter]}</p>
         </div>
       )}
 
@@ -80,7 +97,11 @@ export default function AppPage() {
           transition={{ duration: 0.25 }}
           className="grid gap-4 sm:grid-cols-2"
         >
-          {[...fixtures].sort((a, b) => a.startTime - b.startTime).map((f, i) => (
+          {[...fixtures]
+            .sort((a, b) =>
+              filter === "completed" ? b.startTime - a.startTime : a.startTime - b.startTime
+            )
+            .map((f, i) => (
             <motion.div
               key={f.fixtureId}
               initial={{ opacity: 0, y: 16 }}
