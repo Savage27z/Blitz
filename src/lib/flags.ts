@@ -1,83 +1,71 @@
-const FLAGS: Record<string, string> = {
-  "Algeria": "🇩🇿",
-  "Argentina": "🇦🇷",
-  "Australia": "🇦🇺",
-  "Austria": "🇦🇹",
-  "Belgium": "🇧🇪",
-  "Bosnia & Herzegovina": "🇧🇦",
-  "Brazil": "🇧🇷",
-  "Cameroon": "🇨🇲",
-  "Canada": "🇨🇦",
-  "Cape Verde": "🇨🇻",
-  "Colombia": "🇨🇴",
-  "Congo DR": "🇨🇩",
-  "Costa Rica": "🇨🇷",
-  "Croatia": "🇭🇷",
-  "Denmark": "🇩🇰",
-  "Ecuador": "🇪🇨",
-  "Egypt": "🇪🇬",
-  "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "France": "🇫🇷",
-  "Germany": "🇩🇪",
-  "Ghana": "🇬🇭",
-  "Iran": "🇮🇷",
-  "Iraq": "🇮🇶",
-  "Italy": "🇮🇹",
-  "Ivory Coast": "🇨🇮",
-  "Japan": "🇯🇵",
-  "Jordan": "🇯🇴",
-  "Mexico": "🇲🇽",
-  "Morocco": "🇲🇦",
-  "Myanmar": "🇲🇲",
-  "Netherlands": "🇳🇱",
-  "New Zealand": "🇳🇿",
-  "Nigeria": "🇳🇬",
-  "Norway": "🇳🇴",
-  "Panama": "🇵🇦",
-  "Paraguay": "🇵🇾",
-  "Poland": "🇵🇱",
-  "Portugal": "🇵🇹",
-  "Qatar": "🇶🇦",
-  "Saudi Arabia": "🇸🇦",
-  "Senegal": "🇸🇳",
-  "Serbia": "🇷🇸",
-  "South Africa": "🇿🇦",
-  "South Korea": "🇰🇷",
-  "Spain": "🇪🇸",
-  "Switzerland": "🇨🇭",
-  "Tunisia": "🇹🇳",
-  "Turkey": "🇹🇷",
-  "Uruguay": "🇺🇾",
-  "USA": "🇺🇸",
-  "Uzbekistan": "🇺🇿",
-  "Vietnam": "🇻🇳",
-  "Wales": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+/** ISO 3166-1 alpha-2 codes for flagcdn.com */
+const COUNTRY_CODES: Record<string, string> = {
+  Algeria: "dz",
+  Argentina: "ar",
+  Australia: "au",
+  Austria: "at",
+  Belgium: "be",
+  "Bosnia & Herzegovina": "ba",
+  Brazil: "br",
+  Cameroon: "cm",
+  Canada: "ca",
+  "Cape Verde": "cv",
+  Colombia: "co",
+  "Congo DR": "cd",
+  "Costa Rica": "cr",
+  Croatia: "hr",
+  Denmark: "dk",
+  Ecuador: "ec",
+  Egypt: "eg",
+  England: "gb-eng",
+  France: "fr",
+  Germany: "de",
+  Ghana: "gh",
+  Iran: "ir",
+  Iraq: "iq",
+  Italy: "it",
+  "Ivory Coast": "ci",
+  Japan: "jp",
+  Jordan: "jo",
+  Mexico: "mx",
+  Morocco: "ma",
+  Myanmar: "mm",
+  Netherlands: "nl",
+  "New Zealand": "nz",
+  Nigeria: "ng",
+  Norway: "no",
+  Panama: "pa",
+  Paraguay: "py",
+  Poland: "pl",
+  Portugal: "pt",
+  Qatar: "qa",
+  "Saudi Arabia": "sa",
+  Senegal: "sn",
+  Serbia: "rs",
+  "South Africa": "za",
+  "South Korea": "kr",
+  Spain: "es",
+  Switzerland: "ch",
+  Tunisia: "tn",
+  Turkey: "tr",
+  Uruguay: "uy",
+  USA: "us",
+  Uzbekistan: "uz",
+  Vietnam: "vn",
+  Wales: "gb-wls",
 };
 
+export function getCountryCode(teamName: string): string | null {
+  return COUNTRY_CODES[teamName] ?? null;
+}
+
+/** @deprecated use Flag component instead */
 export function getFlag(teamName: string): string {
-  return FLAGS[teamName] || "🏳️";
+  return COUNTRY_CODES[teamName] ? "" : "🏳️";
 }
 
-const VENUES: Record<number, { stadium: string; city: string }> = {
-  10001: { stadium: "MetLife Stadium", city: "New Jersey" },
-  10002: { stadium: "AT&T Stadium", city: "Dallas" },
-  10003: { stadium: "SoFi Stadium", city: "Los Angeles" },
-  10004: { stadium: "Hard Rock Stadium", city: "Miami" },
-  10005: { stadium: "Lumen Field", city: "Seattle" },
-};
-
-export function getVenue(fixtureId: number) {
-  return VENUES[fixtureId] || { stadium: "FIFA Stadium", city: "TBD" };
-}
-
-const STAGES: Record<number, string> = {
-  10001: "Semi-Final",
-  10002: "Quarter-Final",
-  10003: "Group B · Matchday 3",
-  10004: "Group D · Matchday 2",
-  10005: "Round of 16",
-};
-
-export function getStage(fixtureId: number): string {
-  return STAGES[fixtureId] || "Group Stage";
+export function getFlagUrl(teamName: string, width = 80): string | null {
+  const code = getCountryCode(teamName);
+  if (!code) return null;
+  return `https://flagcdn.com/w${width}/${code}.png`;
 }

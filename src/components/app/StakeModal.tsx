@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useMarketStore } from "@/stores/marketStore";
+import { useUserStore } from "@/stores/userStore";
 import { createIntent } from "@/lib/solana/program";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
 import type { MicroMarket } from "@/lib/markets/types";
@@ -21,6 +22,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const stakeOnMarket = useMarketStore((s) => s.stakeOnMarket);
+  const addStake = useUserStore((s) => s.addStake);
 
   const { publicKey, wallet, signTransaction } = useWallet();
   const { connection } = useConnection();
@@ -53,6 +55,19 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
       });
 
       stakeOnMarket(market.id, outcome, numAmount);
+      addStake({
+        id: `${signature}-${Date.now()}`,
+        wallet: publicKey.toBase58(),
+        fixtureId: market.fixtureId,
+        marketId: market.id,
+        question: market.question,
+        outcome,
+        outcomeLabel: market.outcomes[outcome],
+        amount: numAmount,
+        txHash: signature,
+        timestamp: Date.now(),
+        status: "active",
+      });
       setTxHash(signature);
     } catch (err: any) {
       console.error("Stake error:", err);

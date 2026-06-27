@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useMarketStore } from "@/stores/marketStore";
-import { getFlag } from "@/lib/flags";
+import Flag from "@/components/app/Flag";
 
 interface StatBarProps {
   label: string;
@@ -57,7 +57,7 @@ export default function LiveStats() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-base">{getFlag(team1Name)}</span>
+          <Flag team={team1Name} size={22} />
           <span className="text-[0.8125rem] font-semibold text-offwhite">{team1Name}</span>
         </div>
         <span className="rounded-full border border-white/[0.06] bg-white/[0.03] px-2.5 py-0.5 text-[0.55rem] font-medium uppercase tracking-widest text-white/40">
@@ -65,7 +65,7 @@ export default function LiveStats() {
         </span>
         <div className="flex items-center gap-2">
           <span className="text-[0.8125rem] font-semibold text-offwhite">{team2Name}</span>
-          <span className="text-base">{getFlag(team2Name)}</span>
+          <Flag team={team2Name} size={22} />
         </div>
       </div>
 

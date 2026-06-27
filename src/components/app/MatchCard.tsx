@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import type { Fixture } from "@/lib/txodds/types";
-import { getFlag } from "@/lib/flags";
 import { getFixtureCategory } from "@/hooks/useFixtures";
+import Flag from "@/components/app/Flag";
 
 function getMinuteDisplay(fixture: Fixture): string | null {
   const s = fixture.statusId || "NS";
@@ -86,7 +86,7 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
           {/* Team 1 */}
           <div className="flex flex-1 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
-              {getFlag(fixture.participant1Name)}
+              <Flag team={fixture.participant1Name} size={28} />
             </div>
             <span className="text-[0.9375rem] font-semibold text-offwhite">
               {fixture.participant1Name}
@@ -114,7 +114,7 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
               {fixture.participant2Name}
             </span>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
-              {getFlag(fixture.participant2Name)}
+              <Flag team={fixture.participant2Name} size={28} />
             </div>
           </div>
         </div>

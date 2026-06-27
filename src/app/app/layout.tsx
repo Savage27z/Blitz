@@ -5,9 +5,23 @@ import { usePathname } from "next/navigation";
 import Providers from "@/app/providers";
 import WalletButton from "@/components/app/WalletButton";
 
+function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-lg px-3 py-1.5 text-[0.75rem] font-medium transition-all ${
+        active ? "bg-white/[0.06] text-offwhite" : "text-muted hover:text-offwhite"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMatchView = pathname.includes("/match/");
+  const isProfile = pathname.includes("/profile");
 
   return (
     <Providers>
@@ -30,16 +44,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/app"
-                className={`hidden rounded-lg px-3 py-1.5 text-[0.75rem] font-medium transition-all sm:block ${
-                  !isMatchView
-                    ? "bg-white/[0.06] text-offwhite"
-                    : "text-muted hover:text-offwhite"
-                }`}
-              >
-                All Matches
-              </Link>
+              <div className="hidden items-center gap-1 sm:flex">
+                <NavLink href="/app" label="Matches" active={!isMatchView && !isProfile} />
+                <NavLink href="/app/profile" label="Profile" active={isProfile} />
+              </div>
               <WalletButton />
             </div>
           </div>

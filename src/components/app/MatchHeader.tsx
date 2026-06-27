@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useMarketStore } from "@/stores/marketStore";
-import { getFlag } from "@/lib/flags";
+import Flag from "@/components/app/Flag";
 
 const PHASE_LABELS: Record<string, string> = {
   NS: "Not Started",
@@ -68,8 +68,8 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
       <div className="relative mt-8 flex items-center justify-between">
         {/* Team 1 */}
         <div className="flex flex-1 items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] text-3xl shadow-inner">
-            {isLoading ? "…" : getFlag(team1Name)}
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner">
+            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team1Name} size={40} />}
           </div>
           <div>
             <p className={`text-[1.125rem] font-semibold tracking-tight text-offwhite ${isLoading ? "animate-pulse text-white/30" : ""}`}>
@@ -96,8 +96,8 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
             </p>
             {!isLoading && <p className="mt-0.5 text-[0.65rem] text-white/30">Away</p>}
           </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] text-3xl shadow-inner">
-            {isLoading ? "…" : getFlag(team2Name)}
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner">
+            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team2Name} size={40} />}
           </div>
         </div>
       </div>
