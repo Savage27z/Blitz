@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --color-warm-black: #0A0A0A;
+  --color-warm-dark: #0D0B07;
+  --color-warm-dark-lighter: #161310;
+  --color-cream: #FAF7F2;
+  --color-cream-dark: #F0EBE3;
+  --color-offwhite: #F5F0E8;
+  --color-muted: #7A756C;
+  --color-muted-light: #A8A29E;
+  --color-amber-primary: #F59E0B;
+  --color-amber-deep: #B45309;
+  --color-amber-glow: #FBBF24;
+  --color-amber-soft: #F59E0B1A;
+
+  --font-display: "DM Serif Display", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-warm-dark);
+  color: var(--color-offwhite);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: var(--color-amber-primary);
+  color: var(--color-warm-dark);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+/* Film grain */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Dark card on light bg */
+.card-dark {
+  background: var(--color-warm-dark);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 60px -15px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* 3D tilt on hover */
+.card-tilt {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+.card-tilt:hover {
+  transform: rotateY(-2deg) rotateX(2deg) translateY(-4px);
+}
+
+/* Smooth line animation */
+@keyframes draw-line {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(245, 158, 11, 0.15); }
+}
+
+/* Page loader */
+.loader-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-warm-dark);
+}
