@@ -18,7 +18,7 @@ const PHASE_LABELS: Record<string, string> = {
 export default function MatchHeader({ loading = false }: { loading?: boolean }) {
   const { team1Name, team2Name, score, gamePhase, matchMinute } = useMarketStore();
 
-  const isLive = ["H1", "H2", "ET1", "ET2", "PE"].includes(gamePhase);
+  const isLive = ["H1", "H2", "HT", "ET1", "ET2", "PE", "HTET"].includes(gamePhase);
   const isCompleted = ["F", "FET", "FPE", "WET", "WPE"].includes(gamePhase);
   const isLoading = loading || team1Name === "…";
 

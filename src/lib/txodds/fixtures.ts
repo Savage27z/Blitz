@@ -5,6 +5,8 @@ export type FixtureFilter = "live" | "upcoming" | "completed";
 const LIVE_STATES: GameState[] = ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"];
 const COMPLETED_STATES: GameState[] = ["F", "FET", "FPE", "WET", "WPE"];
 
+export { LIVE_STATES, COMPLETED_STATES };
+
 /** Regulation + stoppage + brief post-whistle buffer when API has no status */
 const MATCH_DURATION_MS = 120 * 60 * 1000;
 

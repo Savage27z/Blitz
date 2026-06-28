@@ -7,20 +7,43 @@ import { useFixtureSnapshot } from "@/hooks/useFixtureSnapshot";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useDemoSimulation } from "@/hooks/useDemoSimulation";
 import { useMarketStore } from "@/stores/marketStore";
-import { getFixtureCategory } from "@/hooks/useFixtures";
+import { normalizeFixturesPayload, mapRawFixture, getFixtureCategory, LIVE_STATES } from "@/lib/txodds/fixtures";
+import { resetEngine } from "@/lib/markets/engine";
+import type { Fixture, GameState } from "@/lib/txodds/types";
 import MatchHeader from "@/components/app/MatchHeader";
 import LiveMatchFeed from "@/components/app/LiveMatchFeed";
 import MarketStream from "@/components/app/MarketStream";
 import SettledMarkets from "@/components/app/SettledMarkets";
 import MiniPitch from "@/components/app/MiniPitch";
 import LiveStats from "@/components/app/LiveStats";
-import { normalizeFixturesPayload, mapRawFixture } from "@/lib/txodds/fixtures";
-import { resetEngine } from "@/lib/markets/engine";
-import type { Fixture } from "@/lib/txodds/types";
-
 import Link from "next/link";
 
-const LIVE_PHASES = ["H1", "H2", "HT", "ET1", "ET2", "PE"] as const;
+function kickoffMinute(startTime?: number): number {
+  if (!startTime) return 1;
+  return Math.min(90, Math.max(1, Math.floor((Date.now() - startTime) / 60_000)));
+}
+
+function resolvePhaseFromFixture(fixture: Fixture): { phase: GameState; minute: number } {
+  const category = getFixtureCategory(fixture);
+  let phase: GameState = fixture.statusId ?? "NS";
+  let minute = 0;
+
+  if (category === "completed") {
+    return { phase: "F", minute: 90 };
+  }
+
+  if (LIVE_STATES.includes(phase)) {
+    return { phase, minute };
+  }
+
+  if (category === "live") {
+    return { phase: "H1", minute: kickoffMinute(fixture.startTime) };
+  }
+
+  return { phase, minute };
+}
+
+const LIVE_PHASES = ["H1", "H2", "HT", "ET1", "ET2", "PE", "HTET"] as const;
 
 export default function MatchPage() {
   const params = useParams();
@@ -30,6 +53,7 @@ export default function MatchPage() {
   const [fixtureLoaded, setFixtureLoaded] = useState(false);
   const [fixtureMeta, setFixtureMeta] = useState<Fixture | null>(null);
   const gamePhase = useMarketStore((s) => s.gamePhase);
+  const connected = useMarketStore((s) => s.connected);
 
   useEffect(() => {
     if (!fixtureId) return;
@@ -66,19 +90,10 @@ export default function MatchPage() {
           setFixtureMeta(fixture);
           store.setFixtureInfo(fixtureId!, fixture.participant1Name, fixture.participant2Name);
 
-          const p1 = fixture.score?.Participant1?.Total?.Goals;
-          const p2 = fixture.score?.Participant2?.Total?.Goals;
-          const category = getFixtureCategory(fixture);
-
-          if (p1 != null && p2 != null) {
-            store.updateMatchState(
-              category === "completed" ? "F" : fixture.statusId ?? "NS",
-              category === "completed" ? 90 : 0,
-              [p1, p2]
-            );
-          } else if (category === "completed") {
-            store.updateMatchState("F", 90, store.score);
-          }
+          const p1 = fixture.score?.Participant1?.Total?.Goals ?? 0;
+          const p2 = fixture.score?.Participant2?.Total?.Goals ?? 0;
+          const { phase, minute } = resolvePhaseFromFixture(fixture);
+          store.updateMatchState(phase, minute, [p1, p2]);
         }
       } catch {
         // keep placeholder
@@ -125,9 +140,22 @@ export default function MatchPage() {
     setDemoMode(next);
   };
 
+  const isKickoffWindow =
+    fixtureMeta != null &&
+    getFixtureCategory(fixtureMeta) === "live" &&
+    !LIVE_PHASES.includes(gamePhase as (typeof LIVE_PHASES)[number]);
+
   return (
     <div className="space-y-6">
       <MatchHeader loading={!fixtureLoaded} />
+
+      {isKickoffWindow && (
+        <div className="rounded-xl border border-amber-primary/20 bg-amber-primary/[0.06] px-4 py-2.5 text-center text-[0.75rem] text-amber-primary/90">
+          {connected
+            ? "Kickoff — TxODDS feed connected, waiting for first live event…"
+            : "Kickoff — connecting to TxODDS live feed…"}
+        </div>
+      )}
 
       {isLiveMatch && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-2.5 text-center text-[0.75rem] text-red-300">

@@ -113,13 +113,17 @@ export function useScoresStream(fixtureId: number | null) {
         if (!msg.data || msg.data === "heartbeat") return;
         try {
           const raw = normalizeScoreEvent(JSON.parse(msg.data));
-          if (!raw.statusSoccerId) return;
+          const data = raw.dataSoccer as any;
+          if (!raw.statusSoccerId && !data) return;
 
           const p1Goals = raw.scoreSoccer?.Participant1?.Total?.Goals ?? 0;
           const p2Goals = raw.scoreSoccer?.Participant2?.Total?.Goals ?? 0;
-          const minute = (raw.dataSoccer as any)?.Minutes ?? (raw.dataSoccer as any)?.minutes ?? 0;
+          const minute = data?.Minutes ?? data?.minutes ?? useMarketStore.getState().matchMinute;
+          const phase =
+            (raw.statusSoccerId as GameState | undefined) ??
+            useMarketStore.getState().gamePhase;
 
-          updateMatchState(raw.statusSoccerId as GameState, minute, [p1Goals, p2Goals]);
+          updateMatchState(phase, minute, [p1Goals, p2Goals]);
 
           const { possession, shotsOnTarget } = extractStats(raw);
           updateMatchStats({ possession, shotsOnTarget });

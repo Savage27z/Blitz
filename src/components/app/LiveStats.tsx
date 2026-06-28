@@ -43,7 +43,7 @@ function StatBar({ label, left, right }: StatBarProps) {
 export default function LiveStats() {
   const { team1Name, team2Name, events, gamePhase, matchStats } = useMarketStore();
 
-  const hasData = events.length > 0 || ["H1", "HT", "H2", "ET1", "ET2", "PE"].includes(gamePhase);
+  const hasData = events.length > 0 || ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"].includes(gamePhase);
 
   const t1Corners = events.filter((e) => e.type === "corner" && e.team === 1).length;
   const t2Corners = events.filter((e) => e.type === "corner" && e.team === 2).length;
