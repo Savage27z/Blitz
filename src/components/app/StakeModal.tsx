@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
-import { createIntent, type CreateIntentPhase } from "@/lib/solana/program";
+import { createIntent, type CreateIntentPhase, type StakeWallet } from "@/lib/solana/program";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
 import type { MicroMarket } from "@/lib/markets/types";
 
@@ -29,12 +29,6 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
 
-  useEffect(() => {
-    if (!publicKey && wallet && !submitting) {
-      connect().catch(() => {});
-    }
-  }, [wallet, publicKey, connect, submitting]);
-
   const numAmount = parseFloat(amount) || 0;
   const totalPool = market.totalStaked[0] + market.totalStaked[1] + numAmount;
   const yourShare = totalPool > 0 ? numAmount / (market.totalStaked[outcome] + numAmount) : 0;
@@ -43,22 +37,46 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const handleStake = async () => {
     if (numAmount <= 0) return;
 
-    if (!publicKey || !signTransaction) {
-      setVisible(true);
-      return;
+    setError(null);
+
+    let activeKey = publicKey;
+    let activeSign = signTransaction;
+
+    if (!activeKey || !activeSign) {
+      if (!wallet) {
+        setVisible(true);
+        return;
+      }
+
+      try {
+        await connect();
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to connect wallet");
+        return;
+      }
+
+      activeKey = wallet.adapter.publicKey ?? null;
+      const adapter = wallet.adapter as { signTransaction?: StakeWallet["signTransaction"] };
+      const adapterSign = adapter.signTransaction?.bind(wallet.adapter);
+      if (!activeKey || !adapterSign) {
+        setError("Wallet not connected — click Stake again after approving");
+        return;
+      }
+      activeSign = adapterSign;
     }
 
     setSubmitting(true);
     setPhase("preparing");
-    setError(null);
 
     try {
+      const stakeWallet: StakeWallet = {
+        publicKey: activeKey,
+        signTransaction: activeSign,
+      };
+
       const signature = await createIntent({
         connection,
-        wallet: {
-          publicKey,
-          signTransaction,
-        },
+        wallet: stakeWallet,
         fixtureId: market.fixtureId,
         marketType: market.type,
         outcome,
@@ -69,7 +87,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
       stakeOnMarket(market.id, outcome, numAmount);
       addStake({
         id: `${signature}-${Date.now()}`,
-        wallet: publicKey.toBase58(),
+        wallet: activeKey.toBase58(),
         fixtureId: market.fixtureId,
         marketId: market.id,
         question: market.question,

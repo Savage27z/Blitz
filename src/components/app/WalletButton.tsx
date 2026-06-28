@@ -3,37 +3,28 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export default function WalletButton() {
   const { publicKey, connecting, wallet, connect } = useWallet();
   const { setVisible } = useWalletModal();
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!wallet || publicKey || connecting) return;
-
-    connect().catch((err) => {
-      console.error("Wallet connect failed:", err);
-      setError(err?.message || "Connection failed");
-    });
-  }, [wallet, publicKey, connecting, connect]);
-
   const handleClick = useCallback(async () => {
     setError(null);
 
-    if (wallet && !publicKey) {
-      try {
-        await connect();
-      } catch (err: unknown) {
-        console.error("Wallet connect failed:", err);
-        setError(err instanceof Error ? err.message : "Connection failed");
-      }
+    if (!wallet) {
+      setVisible(true);
       return;
     }
 
-    setVisible(true);
-  }, [wallet, publicKey, connect, setVisible]);
+    try {
+      await connect();
+    } catch (err: unknown) {
+      console.error("Wallet connect failed:", err);
+      setError(err instanceof Error ? err.message : "Connection failed");
+    }
+  }, [wallet, connect, setVisible]);
 
   if (connecting) {
     return (
