@@ -3,6 +3,7 @@ import { getValidJwt } from "@/lib/txodds/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const apiToken = process.env.TXODDS_API_TOKEN;

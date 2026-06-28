@@ -4,38 +4,23 @@ import { useEffect, useRef } from "react";
 import { useMarketStore } from "@/stores/marketStore";
 import type { GameState } from "@/lib/txodds/types";
 import type { MatchEvent } from "@/lib/markets/types";
+import { LIVE_STATES } from "@/lib/txodds/fixtures";
 import {
   extractScoreStatusFromEvents,
-  getFixtureCategory,
-  LIVE_STATES,
-} from "@/lib/txodds/fixtures";
+  extractStats,
+  goalsFromRaw,
+  parseMatchEventFromRaw,
+} from "@/lib/txodds/scores";
 
-function parseEvents(rawEvents: any[]): MatchEvent[] {
+function parseEvents(rawEvents: Record<string, unknown>[]): MatchEvent[] {
   const parsed: MatchEvent[] = [];
+  const seen = new Set<string>();
 
   for (const raw of rawEvents) {
-    const data = raw.DataSoccer ?? raw.dataSoccer;
-    if (!data) continue;
-
-    const minute = data.Minutes ?? data.minutes ?? 0;
-    const participant = data.Participant ?? data.participant;
-    const p1Id = raw.Participant1Id ?? raw.participant1Id;
-    const team = (participant === p1Id ? 1 : 2) as 1 | 2;
-    const id = `${raw.FixtureId ?? raw.fixtureId}-${raw.Seq ?? raw.seq}-${raw.Ts ?? raw.ts}`;
-
-    if (data.Goal || data.goal) {
-      parsed.push({ id, type: "goal", team, minute, timestamp: raw.Ts ?? raw.ts ?? Date.now() });
-    } else if (data.YellowCard || data.yellowCard) {
-      parsed.push({ id, type: "yellow_card", team, minute, timestamp: raw.Ts ?? raw.ts ?? Date.now() });
-    } else if (data.RedCard || data.redCard) {
-      parsed.push({ id, type: "red_card", team, minute, timestamp: raw.Ts ?? raw.ts ?? Date.now() });
-    } else if (data.Corner || data.corner) {
-      parsed.push({ id, type: "corner", team, minute, timestamp: raw.Ts ?? raw.ts ?? Date.now() });
-    } else {
-      const fkType = data.FreeKickType ?? data.freeKickType;
-      if (fkType === "Danger" || fkType === "HighDanger") {
-        parsed.push({ id, type: "danger", team, minute, detail: fkType, timestamp: raw.Ts ?? raw.ts ?? Date.now() });
-      }
+    const event = parseMatchEventFromRaw(raw);
+    if (event && !seen.has(event.id)) {
+      seen.add(event.id);
+      parsed.push(event);
     }
   }
 
@@ -52,27 +37,24 @@ async function applySnapshot(
   startTime: number | undefined,
   updateMatchState: ReturnType<typeof useMarketStore.getState>["updateMatchState"]
 ) {
-  const res = await fetch(`/api/proxy/scores-snapshot/${fixtureId}`);
+  const res = await fetch(`/api/proxy/scores-snapshot/${fixtureId}`, {
+    cache: "no-store",
+  });
   if (!res.ok) return;
 
-  const events = await res.json();
+  const events = (await res.json()) as Record<string, unknown>[];
   if (!Array.isArray(events) || events.length === 0) return;
 
-  const { statusId, score } = extractScoreStatusFromEvents(events);
-  const p1 = score?.Participant1?.Total?.Goals ?? 0;
-  const p2 = score?.Participant2?.Total?.Goals ?? 0;
+  const { statusId, score, minute: snapshotMinute } = extractScoreStatusFromEvents(events);
+  const latest = events.reduce((best, e) => {
+    const seq = Number(e.Seq ?? e.seq ?? 0);
+    const bestSeq = Number(best.Seq ?? best.seq ?? 0);
+    return seq >= bestSeq ? e : best;
+  }, events[0]);
 
+  const goals = goalsFromRaw(latest, score);
   let phase: GameState = statusId ?? "NS";
-  let minute = 0;
-
-  for (let i = events.length - 1; i >= 0; i--) {
-    const data = events[i].DataSoccer ?? events[i].dataSoccer;
-    const m = data?.Minutes ?? data?.minutes;
-    if (typeof m === "number" && m > 0) {
-      minute = m;
-      break;
-    }
-  }
+  let minute = snapshotMinute ?? 0;
 
   const now = Date.now();
   if (phase === "NS" && startTime && startTime + 120 * 60 * 1000 < now) {
@@ -87,22 +69,24 @@ async function applySnapshot(
   const isLive =
     LIVE_STATES.includes(phase) ||
     LIVE_STATES.includes(store.gamePhase) ||
-    store.connected;
+    (startTime != null && startTime <= now && startTime + 120 * 60 * 1000 > now);
 
-  if (isLive && (store.connected || store.events.length > 0)) {
-    updateMatchState(phase, minute, [p1, p2]);
+  const { possession, shotsOnTarget } = extractStats(latest);
+  useMarketStore.getState().updateMatchStats({ possession, shotsOnTarget });
+
+  if (isLive && store.connected && store.events.length > 0) {
+    updateMatchState(phase, minute, goals);
     return;
   }
 
   const matchEvents = parseEvents(events);
   useMarketStore.setState({ events: matchEvents });
-  updateMatchState(phase, minute, [p1, p2]);
+  updateMatchState(phase, minute, goals);
 }
 
-/** Hydrate + poll scores snapshot during kickoff window */
+/** Hydrate + poll scores snapshot during live match window */
 export function useFixtureSnapshot(fixtureId: number | null, startTime?: number) {
   const updateMatchState = useMarketStore((s) => s.updateMatchState);
-  const hydratedRef = useRef(false);
 
   useEffect(() => {
     if (!fixtureId) return;
@@ -113,7 +97,6 @@ export function useFixtureSnapshot(fixtureId: number | null, startTime?: number)
       if (cancelled) return;
       try {
         await applySnapshot(fixtureId!, startTime, updateMatchState);
-        hydratedRef.current = true;
       } catch {
         // SSE may still provide live updates
       }
@@ -121,17 +104,14 @@ export function useFixtureSnapshot(fixtureId: number | null, startTime?: number)
 
     loadSnapshot();
 
-    const shouldPoll =
+    const inMatchWindow =
       startTime != null && startTime <= Date.now() && startTime + 120 * 60 * 1000 > Date.now();
 
-    const poll = shouldPoll
+    const poll = inMatchWindow
       ? setInterval(() => {
           if (cancelled) return;
-          const phase = useMarketStore.getState().gamePhase;
-          if (!LIVE_STATES.includes(phase) || phase === "H1") {
-            loadSnapshot();
-          }
-        }, 15_000)
+          loadSnapshot();
+        }, 5_000)
       : null;
 
     return () => {
@@ -139,8 +119,4 @@ export function useFixtureSnapshot(fixtureId: number | null, startTime?: number)
       if (poll) clearInterval(poll);
     };
   }, [fixtureId, startTime, updateMatchState]);
-
-  useEffect(() => {
-    hydratedRef.current = false;
-  }, [fixtureId]);
 }
