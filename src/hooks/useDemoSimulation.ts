@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useMarketStore } from "@/stores/marketStore";
-import { generateMarketsFromEvent, resetEngine } from "@/lib/markets/engine";
+import { resetEngine } from "@/lib/markets/engine";
 import type { MatchEvent } from "@/lib/markets/types";
 import type { GameState } from "@/lib/txodds/types";
 
@@ -79,16 +79,6 @@ export function useDemoSimulation(enabled: boolean) {
 
       state.addEvent(event);
       state.updateMatchState(phase, newMinute, newScore);
-
-      const markets = generateMarketsFromEvent(
-        event,
-        state.fixtureId,
-        phase,
-        newScore,
-        state.team1Name,
-        state.team2Name,
-      );
-      markets.forEach((m) => state.addMarket(m));
 
       indexRef.current++;
     };

@@ -18,7 +18,7 @@ const EVENT_CONFIG: Record<MatchEvent["type"], { icon: string; color: string; bg
 
 function EventRow({ event }: { event: MatchEvent }) {
   const { team1Name, team2Name } = useMarketStore();
-  const cfg = EVENT_CONFIG[event.type];
+  const cfg = EVENT_CONFIG[event.type] ?? EVENT_CONFIG.possession;
   const teamName = event.team === 1 ? team1Name : team2Name;
 
   let label = "";

@@ -8,27 +8,27 @@ import { generateMarketsFromEvent } from "@/lib/markets/engine";
 import { checkResolution } from "@/lib/markets/resolver";
 
 export function useMarkets() {
-  const {
-    fixtureId,
-    events,
-    gamePhase,
-    score,
-    team1Name,
-    team2Name,
-    activeMarkets,
-    matchMinute,
-    addMarket,
-    settleMarket,
-    lockMarket,
-  } = useMarketStore();
+  const fixtureId = useMarketStore((s) => s.fixtureId);
+  const events = useMarketStore((s) => s.events);
+  const gamePhase = useMarketStore((s) => s.gamePhase);
+  const score = useMarketStore((s) => s.score);
+  const team1Name = useMarketStore((s) => s.team1Name);
+  const team2Name = useMarketStore((s) => s.team2Name);
+  const activeMarkets = useMarketStore((s) => s.activeMarkets);
+  const matchMinute = useMarketStore((s) => s.matchMinute);
+  const addMarket = useMarketStore((s) => s.addMarket);
+  const settleMarket = useMarketStore((s) => s.settleMarket);
+  const lockMarket = useMarketStore((s) => s.lockMarket);
 
   const { publicKey } = useWallet();
   const updateStakesForMarket = useUserStore((s) => s.updateStakesForMarket);
 
   const processedEventsRef = useRef<Set<string>>(new Set());
+  const sessionStartRef = useRef(Date.now());
 
   useEffect(() => {
     processedEventsRef.current.clear();
+    sessionStartRef.current = Date.now();
   }, [fixtureId]);
 
   useEffect(() => {
@@ -36,6 +36,15 @@ export function useMarkets() {
 
     const latest = events[0];
     if (processedEventsRef.current.has(latest.id)) return;
+
+    // Skip stale snapshot events — only generate markets for fresh stream/demo events
+    const isDemo = latest.id.startsWith("demo-");
+    const isFresh = latest.timestamp >= sessionStartRef.current - 15_000;
+    if (!isDemo && !isFresh) {
+      processedEventsRef.current.add(latest.id);
+      return;
+    }
+
     processedEventsRef.current.add(latest.id);
 
     const newMarkets = generateMarketsFromEvent(
@@ -54,13 +63,17 @@ export function useMarkets() {
     const interval = setInterval(() => {
       const now = Date.now();
       const wallet = publicKey?.toBase58();
+      const markets = useMarketStore.getState().activeMarkets;
+      const currentEvents = useMarketStore.getState().events;
+      const currentScore = useMarketStore.getState().score;
+      const currentMinute = useMarketStore.getState().matchMinute;
 
-      activeMarkets.forEach((market) => {
+      markets.forEach((market) => {
         if (market.status === "open" && market.expiresAt - now < 30_000) {
           lockMarket(market.id);
         }
 
-        const resolution = checkResolution(market, events, score, matchMinute);
+        const resolution = checkResolution(market, currentEvents, currentScore, currentMinute);
         if (resolution?.resolved) {
           settleMarket(market.id, resolution.result);
           if (wallet) {
@@ -71,14 +84,5 @@ export function useMarkets() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [
-    activeMarkets,
-    events,
-    score,
-    matchMinute,
-    settleMarket,
-    lockMarket,
-    publicKey,
-    updateStakesForMarket,
-  ]);
+  }, [lockMarket, settleMarket, publicKey, updateStakesForMarket]);
 }

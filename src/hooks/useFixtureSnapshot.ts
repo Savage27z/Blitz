@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMarketStore } from "@/stores/marketStore";
 import type { GameState } from "@/lib/txodds/types";
 import type { MatchEvent } from "@/lib/markets/types";
 import { extractScoreStatusFromEvents } from "@/lib/txodds/fixtures";
+
+const LIVE_PHASES: GameState[] = ["H1", "H2", "HT", "ET1", "ET2", "PE"];
 
 function parseEvents(rawEvents: any[]): MatchEvent[] {
   const parsed: MatchEvent[] = [];
@@ -38,10 +40,10 @@ function parseEvents(rawEvents: any[]): MatchEvent[] {
   return parsed.reverse();
 }
 
-/** Hydrate match state from scores snapshot for completed or idle fixtures */
+/** Hydrate match state from scores snapshot — never clobber live SSE events */
 export function useFixtureSnapshot(fixtureId: number | null, startTime?: number) {
   const updateMatchState = useMarketStore((s) => s.updateMatchState);
-  const setConnected = useMarketStore((s) => s.setConnected);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     if (!fixtureId) return;
@@ -78,9 +80,21 @@ export function useFixtureSnapshot(fixtureId: number | null, startTime?: number)
           minute = 90;
         }
 
+        const store = useMarketStore.getState();
+        const isLive =
+          LIVE_PHASES.includes(phase) ||
+          LIVE_PHASES.includes(store.gamePhase) ||
+          store.connected;
+
+        if (isLive && (store.connected || store.events.length > 0 || hydratedRef.current)) {
+          updateMatchState(phase, minute, [p1, p2]);
+          return;
+        }
+
         const matchEvents = parseEvents(events);
         useMarketStore.setState({ events: matchEvents });
         updateMatchState(phase, minute, [p1, p2]);
+        hydratedRef.current = true;
       } catch {
         // SSE or demo may still provide live updates
       }
@@ -90,7 +104,10 @@ export function useFixtureSnapshot(fixtureId: number | null, startTime?: number)
 
     return () => {
       cancelled = true;
-      setConnected(false);
     };
-  }, [fixtureId, startTime, updateMatchState, setConnected]);
+  }, [fixtureId, startTime, updateMatchState]);
+
+  useEffect(() => {
+    hydratedRef.current = false;
+  }, [fixtureId]);
 }

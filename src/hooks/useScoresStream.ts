@@ -38,20 +38,20 @@ function parseScoreEvent(raw: SoccerScoreEvent): MatchEvent | null {
   const id = `${raw.fixtureId}-${raw.seq}-${raw.ts}`;
 
   if (data.Goal || data.goal) {
-    return { id, type: "goal", team, minute, detail: data.GoalType ?? data.goalType, timestamp: raw.ts };
+    return { id, type: "goal", team, minute, detail: data.GoalType ?? data.goalType, timestamp: Date.now() };
   }
   if (data.YellowCard || data.yellowCard) {
-    return { id, type: "yellow_card", team, minute, timestamp: raw.ts };
+    return { id, type: "yellow_card", team, minute, timestamp: Date.now() };
   }
   if (data.RedCard || data.redCard) {
-    return { id, type: "red_card", team, minute, timestamp: raw.ts };
+    return { id, type: "red_card", team, minute, timestamp: Date.now() };
   }
   if (data.Corner || data.corner) {
-    return { id, type: "corner", team, minute, timestamp: raw.ts };
+    return { id, type: "corner", team, minute, timestamp: Date.now() };
   }
   const fkType = data.FreeKickType ?? data.freeKickType;
   if (fkType === "Danger" || fkType === "HighDanger") {
-    return { id, type: "danger", team, minute, detail: fkType, timestamp: raw.ts };
+    return { id, type: "danger", team, minute, detail: fkType, timestamp: Date.now() };
   }
 
   return null;

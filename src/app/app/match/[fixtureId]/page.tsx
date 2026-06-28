@@ -18,9 +18,14 @@ import { normalizeFixturesPayload, mapRawFixture } from "@/lib/txodds/fixtures";
 import { resetEngine } from "@/lib/markets/engine";
 import type { Fixture } from "@/lib/txodds/types";
 
+import Link from "next/link";
+
+const LIVE_PHASES = ["H1", "H2", "HT", "ET1", "ET2", "PE"] as const;
+
 export default function MatchPage() {
   const params = useParams();
-  const fixtureId = params.fixtureId ? Number(params.fixtureId) : null;
+  const rawId = params.fixtureId ? Number(params.fixtureId) : NaN;
+  const fixtureId = Number.isFinite(rawId) && rawId > 0 ? rawId : null;
   const [demoMode, setDemoMode] = useState(false);
   const [fixtureLoaded, setFixtureLoaded] = useState(false);
   const [fixtureMeta, setFixtureMeta] = useState<Fixture | null>(null);
@@ -86,13 +91,31 @@ export default function MatchPage() {
   }, [fixtureId]);
 
   useFixtureSnapshot(fixtureId, fixtureMeta?.startTime);
-  useScoresStream(demoMode ? null : fixtureId);
-  useMarkets();
-  useDemoSimulation(demoMode);
 
   const isCompleted = gamePhase === "F" || gamePhase === "FET" || gamePhase === "FPE";
-  const isLiveMatch = ["H1", "H2", "HT", "ET1", "ET2", "PE"].includes(gamePhase);
+  const isLiveMatch = LIVE_PHASES.includes(gamePhase as (typeof LIVE_PHASES)[number]);
+  const effectiveDemo = demoMode && !isLiveMatch;
+
+  useEffect(() => {
+    if (demoMode && isLiveMatch) setDemoMode(false);
+  }, [demoMode, isLiveMatch]);
+
+  useScoresStream(effectiveDemo ? null : fixtureId);
+  useMarkets();
+  useDemoSimulation(effectiveDemo);
+
   const showDemoToggle = !isCompleted && !isLiveMatch;
+
+  if (!fixtureId) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-muted">Invalid match ID</p>
+        <Link href="/app" className="mt-4 inline-block text-amber-primary hover:underline">
+          ← Back to matches
+        </Link>
+      </div>
+    );
+  }
 
   const handleDemoToggle = () => {
     const next = !demoMode;
@@ -105,6 +128,12 @@ export default function MatchPage() {
   return (
     <div className="space-y-6">
       <MatchHeader loading={!fixtureLoaded} />
+
+      {isLiveMatch && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-2.5 text-center text-[0.75rem] text-red-300">
+          Live match — real TxODDS feed active. Demo mode disabled.
+        </div>
+      )}
 
       {showDemoToggle && (
         <div className="flex items-center justify-between rounded-xl border border-amber-primary/20 bg-amber-primary/[0.06] px-4 py-3">

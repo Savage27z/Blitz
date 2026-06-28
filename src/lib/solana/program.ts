@@ -214,16 +214,18 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   });
 
   onPhase?.("confirming");
-  await withTimeout(
+  const confirmation = await withTimeout(
     connection.confirmTransaction(
       { signature, blockhash, lastValidBlockHeight },
       "confirmed"
     ),
-    20_000,
+    30_000,
     "Transaction confirmation"
-  ).catch(() => {
-    // Signature was sent — return it even if confirm is slow
-  });
+  );
+
+  if (confirmation.value.err) {
+    throw new Error(`Transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`);
+  }
 
   return signature;
 }
