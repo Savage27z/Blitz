@@ -12,6 +12,7 @@ import MarketStream from "@/components/app/MarketStream";
 import SettledMarkets from "@/components/app/SettledMarkets";
 import MiniPitch from "@/components/app/MiniPitch";
 import LiveStats from "@/components/app/LiveStats";
+import { normalizeFixturesPayload, mapRawFixture } from "@/lib/txodds/fixtures";
 
 export default function MatchPage() {
   const params = useParams();
@@ -41,12 +42,10 @@ export default function MatchPage() {
         const res = await fetch("/api/proxy/fixtures");
         if (!res.ok) return;
         const data = await res.json();
-        const list = Array.isArray(data) ? data : data.fixtures || [];
-        const fixture = list.find((f: any) => (f.FixtureId ?? f.fixtureId) === fixtureId);
+        const list = normalizeFixturesPayload(data).map(mapRawFixture);
+        const fixture = list.find((f) => f.fixtureId === fixtureId);
         if (fixture) {
-          const p1 = fixture.Participant1 ?? fixture.participant1Name ?? "Team A";
-          const p2 = fixture.Participant2 ?? fixture.participant2Name ?? "Team B";
-          store.setFixtureInfo(fixtureId!, p1, p2);
+          store.setFixtureInfo(fixtureId!, fixture.participant1Name, fixture.participant2Name);
         }
       } catch {
         // keep placeholder

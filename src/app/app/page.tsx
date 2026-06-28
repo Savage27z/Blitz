@@ -15,7 +15,7 @@ const TABS: { id: FixtureFilter; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function AppPage() {
-  const { fixtures, allFixtures, loading, error, filter, setFilter } = useFixtures();
+  const { allFixtures, loading, error, filter, setFilter } = useFixtures();
 
   const now = Date.now();
   const liveCount = allFixtures.filter((f) => isFixtureLive(f, now)).length;
@@ -28,12 +28,16 @@ export default function AppPage() {
   const emptyMessages: Record<FixtureFilter, string> = {
     live: "No live matches right now — check Upcoming for kickoff times",
     upcoming: "No upcoming matches scheduled",
-    completed: "No completed matches yet",
+    completed: "No completed matches yet — games move here ~2 hours after kickoff",
   };
 
-  const sortedFixtures = [...fixtures].sort((a, b) =>
-    filter === "completed" ? b.startTime - a.startTime : a.startTime - b.startTime
-  );
+  function fixturesForTab(tabId: FixtureFilter) {
+    return [...allFixtures]
+      .filter((f) => getFixtureCategory(f, now) === tabId)
+      .sort((a, b) =>
+        tabId === "completed" ? b.startTime - a.startTime : a.startTime - b.startTime
+      );
+  }
 
   return (
     <div>
@@ -54,7 +58,9 @@ export default function AppPage() {
           ))}
         </TabsList>
 
-        {TABS.map((tab) => (
+        {TABS.map((tab) => {
+          const tabFixtures = fixturesForTab(tab.id);
+          return (
           <TabsContent key={tab.id} value={tab.id} className="mt-6">
             {loading && (
               <div className="grid gap-4 sm:grid-cols-2">
@@ -81,21 +87,22 @@ export default function AppPage() {
               </Card>
             )}
 
-            {!loading && !error && sortedFixtures.length === 0 && (
+            {!loading && !error && tabFixtures.length === 0 && (
               <div className="py-16 text-center">
                 <p className="text-muted-foreground">{emptyMessages[tab.id]}</p>
               </div>
             )}
 
-            {!loading && !error && sortedFixtures.length > 0 && (
+            {!loading && !error && tabFixtures.length > 0 && (
               <div className="grid gap-4 sm:grid-cols-2">
-                {sortedFixtures.map((f) => (
+                {tabFixtures.map((f) => (
                   <MatchCard key={f.fixtureId} fixture={f} />
                 ))}
               </div>
             )}
           </TabsContent>
-        ))}
+          );
+        })}
       </Tabs>
     </div>
   );

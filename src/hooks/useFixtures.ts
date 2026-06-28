@@ -1,32 +1,46 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { Fixture, GameState } from "@/lib/txodds/types";
+import { useState, useEffect, useCallback } from "react";
+import type { Fixture } from "@/lib/txodds/types";
+import {
+  type FixtureFilter,
+  getFixtureCategory,
+  isFixtureLive,
+  mapRawFixture,
+  normalizeFixturesPayload,
+} from "@/lib/txodds/fixtures";
 
-export type FixtureFilter = "live" | "upcoming" | "completed";
+export type { FixtureFilter };
+export { getFixtureCategory, isFixtureLive };
 
-const LIVE_STATES: GameState[] = ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"];
-const COMPLETED_STATES: GameState[] = ["F", "FET", "FPE", "WET", "WPE"];
+const ARCHIVE_KEY = "blitz-fixtures-archive";
 
-// Approximate match duration for time-based inference when API has no status
-const MATCH_DURATION_MS = 105 * 60 * 1000;
-
-export function getFixtureCategory(fixture: Fixture, now = Date.now()): FixtureFilter {
-  const status = fixture.statusId || "NS";
-
-  if (LIVE_STATES.includes(status)) return "live";
-  if (COMPLETED_STATES.includes(status)) return "completed";
-
-  const start = fixture.startTime;
-  if (!start || isNaN(start)) return "upcoming";
-
-  if (start + MATCH_DURATION_MS < now) return "completed";
-  if (start <= now) return "live"; // kickoff passed, likely in progress
-  return "upcoming";
+function loadArchive(): Fixture[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(ARCHIVE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Fixture[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
-export function isFixtureLive(fixture: Fixture, now = Date.now()): boolean {
-  return getFixtureCategory(fixture, now) === "live";
+function saveArchive(fixtures: Fixture[]) {
+  if (typeof window === "undefined") return;
+  const completed = fixtures.filter((f) => getFixtureCategory(f) === "completed");
+  const byId = new Map<number, Fixture>();
+  loadArchive().forEach((f) => byId.set(f.fixtureId, f));
+  completed.forEach((f) => byId.set(f.fixtureId, f));
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(Array.from(byId.values())));
+}
+
+function mergeWithArchive(incoming: Fixture[]): Fixture[] {
+  const byId = new Map<number, Fixture>();
+  loadArchive().forEach((f) => byId.set(f.fixtureId, f));
+  incoming.forEach((f) => byId.set(f.fixtureId, f));
+  return Array.from(byId.values());
 }
 
 export function useFixtures() {
@@ -34,42 +48,38 @@ export function useFixtures() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FixtureFilter>("upcoming");
+  const [now, setNow] = useState(() => Date.now());
+
+  const fetchFixtures = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/proxy/fixtures");
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      const list = normalizeFixturesPayload(data).map(mapRawFixture);
+      const merged = mergeWithArchive(list);
+      saveArchive(merged);
+      setFixtures(merged);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to fetch fixtures");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchFixtures() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/proxy/fixtures");
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        const data = await res.json();
-        const raw: any[] = Array.isArray(data) ? data : data.fixtures || [];
-        const list: Fixture[] = raw.map((f) => ({
-          fixtureId: f.FixtureId ?? f.fixtureId,
-          competitionId: f.CompetitionId ?? f.competitionId,
-          competitionName: f.Competition ?? f.competitionName,
-          participant1Id: f.Participant1Id ?? f.participant1Id,
-          participant2Id: f.Participant2Id ?? f.participant2Id,
-          participant1Name: f.Participant1 ?? f.participant1Name ?? "TBD",
-          participant2Name: f.Participant2 ?? f.participant2Name ?? "TBD",
-          participant1IsHome: f.Participant1IsHome ?? f.participant1IsHome ?? true,
-          startTime: f.StartTime ?? f.startTime,
-          statusId: f.StatusSoccerId ?? f.statusId ?? "NS",
-          score: f.scoreSoccer ?? f.score,
-        }));
-        setFixtures(list);
-        setError(null);
-      } catch (e: any) {
-        setError(e.message || "Failed to fetch fixtures");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchFixtures();
     const interval = setInterval(fetchFixtures, 30000);
     return () => clearInterval(interval);
+  }, [fetchFixtures]);
+
+  // Re-evaluate live/completed buckets every minute without waiting for API poll
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(tick);
   }, []);
 
-  const now = Date.now();
   const filtered = fixtures.filter((f) => getFixtureCategory(f, now) === filter);
 
   return { fixtures: filtered, allFixtures: fixtures, loading, error, filter, setFilter };
