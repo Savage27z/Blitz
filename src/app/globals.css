@@ -140,6 +140,24 @@ body {
   z-index: 10002 !important;
 }
 
+/* Blitz wallet button */
+.blitz-wallet-btn {
+  background-color: var(--color-amber-primary) !important;
+  color: var(--color-warm-dark) !important;
+  height: auto !important;
+  line-height: 1.25 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  font-family: var(--font-body) !important;
+}
+
+.blitz-wallet-btn:not([disabled]):hover {
+  filter: brightness(1.1);
+  background-color: var(--color-amber-primary) !important;
+}
+
 /* Page loader */
 .loader-mask {
   position: fixed;
