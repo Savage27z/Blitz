@@ -24,7 +24,6 @@ export default function MatchPage() {
   const [demoMode, setDemoMode] = useState(false);
   const [fixtureLoaded, setFixtureLoaded] = useState(false);
   const [fixtureMeta, setFixtureMeta] = useState<Fixture | null>(null);
-  const connected = useMarketStore((s) => s.connected);
   const gamePhase = useMarketStore((s) => s.gamePhase);
 
   useEffect(() => {
@@ -87,39 +86,53 @@ export default function MatchPage() {
   }, [fixtureId]);
 
   useFixtureSnapshot(fixtureId, fixtureMeta?.startTime);
-  useScoresStream(fixtureId);
+  useScoresStream(demoMode ? null : fixtureId);
   useMarkets();
   useDemoSimulation(demoMode);
 
   const isCompleted = gamePhase === "F" || gamePhase === "FET" || gamePhase === "FPE";
-  const showDemoToggle = !connected && !isCompleted;
+  const isLiveMatch = ["H1", "H2", "HT", "ET1", "ET2", "PE"].includes(gamePhase);
+  const showDemoToggle = !isCompleted && !isLiveMatch;
+
+  const handleDemoToggle = () => {
+    const next = !demoMode;
+    if (next) {
+      useMarketStore.getState().setConnected(false);
+    }
+    setDemoMode(next);
+  };
 
   return (
     <div className="space-y-6">
       <MatchHeader loading={!fixtureLoaded} />
 
       {showDemoToggle && (
-        <div className="flex items-center justify-between rounded-xl border border-white/[0.04] bg-white/[0.015] px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[0.6875rem] text-muted">Demo Simulation</span>
-            {demoMode && (
-              <span className="rounded bg-amber-primary/10 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase text-amber-primary">
-                Active
-              </span>
-            )}
-            <span className="text-[0.55rem] text-muted/60">
-              (no live SSE connection — use demo to simulate)
+        <div className="flex items-center justify-between rounded-xl border border-amber-primary/20 bg-amber-primary/[0.06] px-4 py-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[0.8125rem] font-medium text-offwhite">Demo Simulation</span>
+              {demoMode && (
+                <span className="rounded bg-amber-primary/20 px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase text-amber-primary">
+                  Active
+                </span>
+              )}
+            </div>
+            <span className="text-[0.6875rem] text-muted">
+              {demoMode
+                ? "Simulating live events and markets"
+                : "Match not live yet — toggle to preview markets"}
             </span>
           </div>
           <button
-            onClick={() => setDemoMode(!demoMode)}
-            className={`relative h-5 w-9 rounded-full transition-colors duration-200 ${
-              demoMode ? "bg-amber-primary" : "bg-white/[0.1]"
+            onClick={handleDemoToggle}
+            aria-pressed={demoMode}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${
+              demoMode ? "bg-amber-primary" : "bg-white/[0.15]"
             }`}
           >
             <span
-              className={`absolute top-0.5 h-4 w-4 rounded-full bg-warm-dark transition-transform duration-200 ${
-                demoMode ? "translate-x-4" : "translate-x-0.5"
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-warm-dark transition-transform duration-200 ${
+                demoMode ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
           </button>

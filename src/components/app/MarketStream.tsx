@@ -53,7 +53,7 @@ export default function MarketStream() {
               <p className="mt-1 text-[0.6875rem] text-white/20">
                 {isCompleted
                   ? "All markets have been settled"
-                  : "Markets appear as match events unfold"}
+                  : "Toggle Demo Simulation above, or wait for live match events"}
               </p>
             </div>
           </div>

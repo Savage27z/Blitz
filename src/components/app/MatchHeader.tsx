@@ -16,8 +16,7 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export default function MatchHeader({ loading = false }: { loading?: boolean }) {
-  const { team1Name, team2Name, score, gamePhase, matchMinute, connected } =
-    useMarketStore();
+  const { team1Name, team2Name, score, gamePhase, matchMinute } = useMarketStore();
 
   const isLive = ["H1", "H2", "ET1", "ET2", "PE"].includes(gamePhase);
   const isCompleted = ["F", "FET", "FPE", "WET", "WPE"].includes(gamePhase);
@@ -45,7 +44,13 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
             <span className="inline-flex h-2 w-2 rounded-full bg-white/20" />
           )}
           <span className="font-mono text-[0.65rem] font-medium uppercase tracking-widest text-white/50">
-            {isLive ? "Live" : isCompleted ? "Full Time" : connected ? "Connected" : "Awaiting kickoff"}
+            {isLive
+              ? "Live"
+              : isCompleted
+              ? "Full Time"
+              : gamePhase === "NS"
+              ? "Awaiting kickoff"
+              : "Pre-match"}
           </span>
         </div>
         <div className="flex items-center gap-2.5">

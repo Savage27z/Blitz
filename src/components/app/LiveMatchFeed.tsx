@@ -73,7 +73,9 @@ export default function LiveMatchFeed() {
               <span className="text-[0.75rem] text-white/20">📡</span>
             </div>
             <p className="text-[0.8125rem] text-white/30">Waiting for match events...</p>
-            <p className="text-[0.65rem] text-white/15">Events stream in real-time during live matches</p>
+            <p className="text-[0.65rem] text-white/15">
+              Toggle Demo Simulation above to preview live events
+            </p>
           </div>
         ) : (
           <AnimatePresence initial={false}>
