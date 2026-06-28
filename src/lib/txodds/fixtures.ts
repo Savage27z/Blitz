@@ -58,14 +58,37 @@ export function extractScoreStatusFromEvents(events: any[]): {
 } {
   let statusId: GameState | undefined;
   let score: SoccerScore | undefined;
+  let p1Goals = 0;
+  let p2Goals = 0;
+  const p1Id = events[0]?.Participant1Id ?? events[0]?.participant1Id;
+
+  for (const e of events) {
+    const st = (e.StatusSoccerId ?? e.statusSoccerId) as GameState | undefined;
+    const sc = (e.ScoreSoccer ?? e.scoreSoccer) as SoccerScore | undefined;
+    if (st && st !== "NS") statusId = st;
+    if (sc?.Participant1?.Total) score = sc;
+
+    const data = e.DataSoccer ?? e.dataSoccer;
+    if (data?.Goal || data?.goal) {
+      const participant = data.Participant ?? data.participant;
+      if (participant === p1Id) p1Goals++;
+      else p2Goals++;
+    }
+  }
+
+  if (!score && (p1Goals > 0 || p2Goals > 0)) {
+    score = {
+      Participant1: { H1: { Goals: 0, YellowCards: 0, RedCards: 0, Corners: 0 }, H2: { Goals: 0, YellowCards: 0, RedCards: 0, Corners: 0 }, Total: { Goals: p1Goals, YellowCards: 0, RedCards: 0, Corners: 0 } },
+      Participant2: { H1: { Goals: 0, YellowCards: 0, RedCards: 0, Corners: 0 }, H2: { Goals: 0, YellowCards: 0, RedCards: 0, Corners: 0 }, Total: { Goals: p2Goals, YellowCards: 0, RedCards: 0, Corners: 0 } },
+    };
+  }
 
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     const st = (e.StatusSoccerId ?? e.statusSoccerId) as GameState | undefined;
     const sc = (e.ScoreSoccer ?? e.scoreSoccer) as SoccerScore | undefined;
-    if (st && st !== "NS") statusId = st;
-    if (sc?.Participant1?.Total) score = sc;
-    if (statusId && score) break;
+    if (st && st !== "NS") { statusId = st; break; }
+    if (sc?.Participant1?.Total && !statusId) break;
   }
 
   return { statusId, score };

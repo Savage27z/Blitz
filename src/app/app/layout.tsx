@@ -2,23 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import Providers from "@/app/providers";
 import WalletButton from "@/components/app/WalletButton";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 
 function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
-    <Button
-      variant={active ? "secondary" : "ghost"}
-      size="sm"
-      render={<Link href={href} />}
-      className={cn(!active && "text-muted-foreground")}
+    <Link
+      href={href}
+      className={`rounded-lg px-3 py-1.5 text-[0.75rem] font-medium transition-all ${
+        active ? "bg-white/[0.06] text-offwhite" : "text-muted hover:text-offwhite"
+      }`}
     >
       {label}
-    </Button>
+    </Link>
   );
 }
 
@@ -29,32 +25,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <Providers>
-      <div className="min-h-screen bg-background text-foreground">
-        <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="font-display text-lg transition-opacity hover:opacity-80">
+      <div className="min-h-screen bg-warm-dark text-offwhite">
+        <header className="sticky top-0 z-50 border-b border-white/[0.04] bg-warm-dark/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="font-display text-lg text-offwhite transition-opacity hover:opacity-80">
                 Blitz
               </Link>
-              {isMatchView && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  render={<Link href="/app" />}
-                  className="gap-1.5 text-muted-foreground"
-                >
-                  <ArrowLeft className="size-3.5" />
-                  Matches
-                </Button>
-              )}
+              <div className="hidden items-center gap-1 sm:flex">
+                {isMatchView && (
+                  <Link
+                    href="/app"
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.75rem] text-muted transition-all hover:bg-white/[0.04] hover:text-offwhite"
+                  >
+                    <span className="text-[0.6rem]">←</span> Matches
+                  </Link>
+                )}
+              </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <div className="hidden items-center sm:flex">
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-1 sm:flex">
                 <NavLink href="/app" label="Matches" active={!isMatchView && !isProfile} />
                 <NavLink href="/app/profile" label="Profile" active={isProfile} />
               </div>
-              <Separator orientation="vertical" className="mx-1 hidden h-5 sm:block" />
               <WalletButton />
             </div>
           </div>

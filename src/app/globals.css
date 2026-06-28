@@ -127,6 +127,19 @@ body {
   50% { box-shadow: 0 0 20px 4px rgba(245, 158, 11, 0.15); }
 }
 
+/* Solana wallet modal — must sit above app header (z-50) */
+.wallet-adapter-modal-wrapper {
+  z-index: 10000 !important;
+}
+
+.wallet-adapter-modal {
+  z-index: 10001 !important;
+}
+
+.wallet-adapter-dropdown {
+  z-index: 10002 !important;
+}
+
 /* Page loader */
 .loader-mask {
   position: fixed;

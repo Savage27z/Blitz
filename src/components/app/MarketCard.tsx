@@ -1,11 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import CountdownTimer from "@/components/ui/CountdownTimer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import type { MicroMarket } from "@/lib/markets/types";
-import { cn } from "@/lib/utils";
 
 interface Props {
   market: MicroMarket;
@@ -19,56 +16,61 @@ export default function MarketCard({ market, onStake }: Props) {
   const isLocked = market.status === "locked" || isExpired;
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-start justify-between space-y-0 gap-3">
-        <p className="text-sm font-medium leading-snug">{market.question}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96, height: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+    >
+      <div className="flex items-start justify-between">
+        <p className="text-[0.8125rem] font-medium leading-snug text-offwhite">
+          {market.question}
+        </p>
         <CountdownTimer expiresAt={market.expiresAt} />
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-3">
-        <Progress value={prob0}>
-          <ProgressTrack className="h-1.5">
-            <ProgressIndicator className="bg-emerald-500" />
-          </ProgressTrack>
-        </Progress>
+      {/* Probability bar */}
+      <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-700"
+          style={{ width: `${prob0}%` }}
+        />
+      </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            disabled={isLocked}
-            onClick={() => onStake(market.id, 0)}
-            className={cn(
-              "h-auto flex-col gap-0.5 py-3",
-              "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50"
-            )}
-          >
-            <span className="text-xs text-muted-foreground">{market.outcomes[0]}</span>
-            <span className="font-mono text-sm font-semibold text-emerald-400">
-              {prob0.toFixed(0)}%
-            </span>
-          </Button>
-          <Button
-            variant="outline"
-            disabled={isLocked}
-            onClick={() => onStake(market.id, 1)}
-            className={cn(
-              "h-auto flex-col gap-0.5 py-3",
-              "border-destructive/30 bg-destructive/5 hover:bg-destructive/10 hover:border-destructive/50"
-            )}
-          >
-            <span className="text-xs text-muted-foreground">{market.outcomes[1]}</span>
-            <span className="font-mono text-sm font-semibold text-destructive">
-              {(100 - prob0).toFixed(0)}%
-            </span>
-          </Button>
-        </div>
-      </CardContent>
+      {/* Outcome buttons */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          disabled={isLocked}
+          onClick={() => onStake(market.id, 0)}
+          className="group rounded-lg border border-green-500/20 bg-green-500/[0.06] px-3 py-2.5 text-center transition-all hover:border-green-500/40 hover:bg-green-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="block text-[0.6875rem] text-muted-light">
+            {market.outcomes[0]}
+          </span>
+          <span className="mt-0.5 block font-mono text-[0.75rem] font-semibold text-green-400">
+            {prob0.toFixed(0)}%
+          </span>
+        </button>
+        <button
+          disabled={isLocked}
+          onClick={() => onStake(market.id, 1)}
+          className="group rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2.5 text-center transition-all hover:border-red-500/40 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="block text-[0.6875rem] text-muted-light">
+            {market.outcomes[1]}
+          </span>
+          <span className="mt-0.5 block font-mono text-[0.75rem] font-semibold text-red-400">
+            {(100 - prob0).toFixed(0)}%
+          </span>
+        </button>
+      </div>
 
       {isLocked && (
-        <CardFooter className="justify-center border-t bg-muted/30 py-2">
-          <p className="text-xs text-muted-foreground">Market locked — resolving soon</p>
-        </CardFooter>
+        <p className="mt-2 text-center text-[0.6875rem] text-muted">
+          Market locked — resolving soon
+        </p>
       )}
-    </Card>
+    </motion.div>
   );
 }

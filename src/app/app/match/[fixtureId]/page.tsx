@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useScoresStream } from "@/hooks/useScoresStream";
+import { useFixtureSnapshot } from "@/hooks/useFixtureSnapshot";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useDemoSimulation } from "@/hooks/useDemoSimulation";
 import { useMarketStore } from "@/stores/marketStore";
+import { getFixtureCategory } from "@/hooks/useFixtures";
 import MatchHeader from "@/components/app/MatchHeader";
 import LiveMatchFeed from "@/components/app/LiveMatchFeed";
 import MarketStream from "@/components/app/MarketStream";
@@ -13,18 +15,22 @@ import SettledMarkets from "@/components/app/SettledMarkets";
 import MiniPitch from "@/components/app/MiniPitch";
 import LiveStats from "@/components/app/LiveStats";
 import { normalizeFixturesPayload, mapRawFixture } from "@/lib/txodds/fixtures";
+import type { Fixture } from "@/lib/txodds/types";
 
 export default function MatchPage() {
   const params = useParams();
   const fixtureId = params.fixtureId ? Number(params.fixtureId) : null;
   const [demoMode, setDemoMode] = useState(false);
   const [fixtureLoaded, setFixtureLoaded] = useState(false);
+  const [fixtureMeta, setFixtureMeta] = useState<Fixture | null>(null);
   const connected = useMarketStore((s) => s.connected);
+  const gamePhase = useMarketStore((s) => s.gamePhase);
 
   useEffect(() => {
     if (!fixtureId) return;
 
     setFixtureLoaded(false);
+    setFixtureMeta(null);
     const store = useMarketStore.getState();
     store.setFixtureInfo(fixtureId, "…", "…");
     useMarketStore.setState({
@@ -45,7 +51,22 @@ export default function MatchPage() {
         const list = normalizeFixturesPayload(data).map(mapRawFixture);
         const fixture = list.find((f) => f.fixtureId === fixtureId);
         if (fixture) {
+          setFixtureMeta(fixture);
           store.setFixtureInfo(fixtureId!, fixture.participant1Name, fixture.participant2Name);
+
+          const p1 = fixture.score?.Participant1?.Total?.Goals;
+          const p2 = fixture.score?.Participant2?.Total?.Goals;
+          const category = getFixtureCategory(fixture);
+
+          if (p1 != null && p2 != null) {
+            store.updateMatchState(
+              category === "completed" ? "F" : fixture.statusId ?? "NS",
+              category === "completed" ? 90 : 0,
+              [p1, p2]
+            );
+          } else if (category === "completed") {
+            store.updateMatchState("F", 90, store.score);
+          }
         }
       } catch {
         // keep placeholder
@@ -57,16 +78,19 @@ export default function MatchPage() {
     loadFixture();
   }, [fixtureId]);
 
+  useFixtureSnapshot(fixtureId, fixtureMeta?.startTime);
   useScoresStream(fixtureId);
   useMarkets();
   useDemoSimulation(demoMode);
+
+  const isCompleted = gamePhase === "F" || gamePhase === "FET" || gamePhase === "FPE";
+  const showDemoToggle = !connected && !isCompleted;
 
   return (
     <div className="space-y-6">
       <MatchHeader loading={!fixtureLoaded} />
 
-      {/* Demo mode toggle - fallback for when no live matches */}
-      {!connected && (
+      {showDemoToggle && (
         <div className="flex items-center justify-between rounded-xl border border-white/[0.04] bg-white/[0.015] px-4 py-2.5">
           <div className="flex items-center gap-2">
             <span className="text-[0.6875rem] text-muted">Demo Simulation</span>
