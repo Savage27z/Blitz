@@ -19,7 +19,7 @@ export const TXL_TOKEN_MINT = new PublicKey(
 );
 
 export const RPC_ENDPOINT =
-  process.env.NEXT_PUBLIC_SOLANA_RPC || "https://api.devnet.solana.com";
+  process.env.NEXT_PUBLIC_SOLANA_RPC || "https://rpc.ankr.com/solana_devnet";
 
 export const SOLSCAN_BASE =
   process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"

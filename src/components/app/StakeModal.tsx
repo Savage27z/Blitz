@@ -6,7 +6,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
-import { createIntent } from "@/lib/solana/program";
+import { createIntent, type CreateIntentPhase } from "@/lib/solana/program";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
 import type { MicroMarket } from "@/lib/markets/types";
 
@@ -19,6 +19,7 @@ interface Props {
 export default function StakeModal({ market, outcome, onClose }: Props) {
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<CreateIntentPhase | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const stakeOnMarket = useMarketStore((s) => s.stakeOnMarket);
@@ -37,6 +38,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
     if (numAmount <= 0) return;
 
     setSubmitting(true);
+    setPhase("preparing");
     setError(null);
 
     try {
@@ -47,6 +49,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         if (!wallet) {
           setVisible(true);
           setSubmitting(false);
+          setPhase(null);
           return;
         }
         await connect();
@@ -57,6 +60,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
       if (!activePublicKey || !activeWallet?.signTransaction) {
         setError("Wallet not connected");
         setSubmitting(false);
+        setPhase(null);
         return;
       }
 
@@ -71,6 +75,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         marketType: market.type,
         outcome,
         amount: numAmount,
+        onPhase: setPhase,
       });
 
       stakeOnMarket(market.id, outcome, numAmount);
@@ -93,7 +98,15 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
       setError(err?.message || "Transaction failed");
     } finally {
       setSubmitting(false);
+      setPhase(null);
     }
+  };
+
+  const phaseLabel: Record<CreateIntentPhase, string> = {
+    preparing: "Preparing transaction...",
+    signing: "Approve in Phantom →",
+    sending: "Sending to Solana...",
+    confirming: "Confirming on-chain...",
   };
 
   const solscanUrl = txHash ? `${SOLSCAN_BASE}/${txHash}${SOLSCAN_CLUSTER_PARAM}` : null;
@@ -233,7 +246,9 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                 className="mt-5 w-full rounded-xl bg-amber-primary py-3.5 text-[0.875rem] font-semibold text-warm-dark transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting
-                  ? "Confirming on-chain..."
+                  ? phase
+                    ? phaseLabel[phase]
+                    : "Processing..."
                   : !publicKey
                   ? "Connect Wallet"
                   : `Stake $${numAmount || "0"} USDT`}

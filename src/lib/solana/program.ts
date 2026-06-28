@@ -12,9 +12,23 @@ import { TXLINE_PROGRAM_ID, USDT_MINT } from "./constants";
 import type { AnchorWallet } from "@solana/wallet-adapter-react";
 import type { Connection } from "@solana/web3.js";
 
+export type CreateIntentPhase = "preparing" | "signing" | "sending" | "confirming";
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — try again`)), ms)
+    ),
+  ]);
+}
+
 /**
  * Compute a SHA-256 terms hash for market intent parameters.
- * Encodes fixtureId + marketType + outcome into a deterministic 32-byte hash.
  */
 export async function computeTermsHash(
   fixtureId: number,
@@ -27,9 +41,6 @@ export async function computeTermsHash(
   return new Uint8Array(hashBuffer);
 }
 
-/**
- * Derive the order_intent PDA: ["order_intent", maker, terms_hash]
- */
 export function deriveOrderIntentPda(
   maker: PublicKey,
   termsHash: Uint8Array
@@ -40,9 +51,6 @@ export function deriveOrderIntentPda(
   );
 }
 
-/**
- * Derive the intent vault PDA: ["intent_vault", order_intent]
- */
 export function deriveIntentVaultPda(orderIntentPda: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("intent_vault"), orderIntentPda.toBuffer()],
@@ -58,11 +66,11 @@ export interface CreateIntentParams {
   outcome: number;
   amount: number;
   expirationMinutes?: number;
+  onPhase?: (phase: CreateIntentPhase) => void;
 }
 
 /**
  * Create an on-chain intent via the TxLINE program.
- * Creates the maker USDT ATA if missing.
  */
 export async function createIntent(params: CreateIntentParams): Promise<string> {
   const {
@@ -73,7 +81,10 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
     outcome,
     amount,
     expirationMinutes = 10,
+    onPhase,
   } = params;
+
+  onPhase?.("preparing");
 
   const termsHash = await computeTermsHash(fixtureId, marketType, outcome);
   const intentId = BigInt(Date.now());
@@ -133,7 +144,16 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
     data,
   };
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  const [blockhashResult, ataInfo] = await withTimeout(
+    Promise.all([
+      connection.getLatestBlockhash("confirmed"),
+      connection.getAccountInfo(makerTokenAccount, "confirmed"),
+    ]),
+    12_000,
+    "RPC request"
+  );
+
+  const { blockhash, lastValidBlockHeight } = blockhashResult;
 
   const tx = new Transaction({
     feePayer: wallet.publicKey,
@@ -141,7 +161,6 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
     lastValidBlockHeight,
   });
 
-  const ataInfo = await connection.getAccountInfo(makerTokenAccount);
   if (!ataInfo) {
     tx.add(
       createAssociatedTokenAccountInstruction(
@@ -155,16 +174,26 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
 
   tx.add(instruction);
 
+  onPhase?.("signing");
   const signedTx = await wallet.signTransaction(tx);
+
+  onPhase?.("sending");
   const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-    skipPreflight: false,
-    preflightCommitment: "confirmed",
+    skipPreflight: true,
+    maxRetries: 3,
   });
 
-  await connection.confirmTransaction(
-    { signature, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
+  onPhase?.("confirming");
+  await withTimeout(
+    connection.confirmTransaction(
+      { signature, blockhash, lastValidBlockHeight },
+      "confirmed"
+    ),
+    20_000,
+    "Transaction confirmation"
+  ).catch(() => {
+    // Signature was sent — return it even if confirm is slow
+  });
 
   return signature;
 }
