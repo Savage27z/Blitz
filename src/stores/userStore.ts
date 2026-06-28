@@ -20,6 +20,7 @@ interface UserStoreState {
   stakes: UserStake[];
   addStake: (stake: UserStake) => void;
   loadStakes: (wallet: string) => UserStake[];
+  updateStakesForMarket: (marketId: string, result: 0 | 1, wallet: string) => void;
 }
 
 const STORAGE_KEY = "blitz_user_stakes";
@@ -52,5 +53,19 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
     const filtered = readAll().filter((s) => s.wallet === wallet);
     set({ stakes: filtered });
     return filtered;
+  },
+
+  updateStakesForMarket: (marketId, result, wallet) => {
+    const all = readAll().map((s) => {
+      if (s.marketId !== marketId || s.wallet !== wallet || s.status !== "active") {
+        return s;
+      }
+      return {
+        ...s,
+        status: s.outcome === result ? ("won" as const) : ("lost" as const),
+      };
+    });
+    writeAll(all);
+    set({ stakes: all.filter((s) => s.wallet === wallet) });
   },
 }));

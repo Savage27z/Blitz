@@ -41,7 +41,7 @@ function StatBar({ label, left, right }: StatBarProps) {
 }
 
 export default function LiveStats() {
-  const { team1Name, team2Name, events, gamePhase } = useMarketStore();
+  const { team1Name, team2Name, events, gamePhase, matchStats } = useMarketStore();
 
   const hasData = events.length > 0 || ["H1", "HT", "H2", "ET1", "ET2", "PE"].includes(gamePhase);
 
@@ -52,9 +52,15 @@ export default function LiveStats() {
   const t1Dangers = events.filter((e) => e.type === "danger" && e.team === 1).length;
   const t2Dangers = events.filter((e) => e.type === "danger" && e.team === 2).length;
 
+  const possession = matchStats.possession;
+  const t1Possession = Math.round(possession);
+  const t2Possession = 100 - t1Possession;
+
+  const t1Shots = matchStats.shotsOnTarget[0] || t1Dangers;
+  const t2Shots = matchStats.shotsOnTarget[1] || t2Dangers;
+
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.03] to-transparent shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
         <div className="flex items-center gap-2">
           <Flag team={team1Name} size={22} />
@@ -69,11 +75,10 @@ export default function LiveStats() {
         </div>
       </div>
 
-      {/* Body */}
       <div className="p-5">
         {!hasData ? (
           <div className="flex flex-col items-center gap-2 py-6">
-            <div className="h-8 w-8 rounded-full border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02]">
               <span className="text-[0.75rem] text-white/20">⏱</span>
             </div>
             <p className="text-[0.8125rem] text-white/30">
@@ -82,8 +87,8 @@ export default function LiveStats() {
           </div>
         ) : (
           <div className="space-y-4">
-            <StatBar label="Possession" left={50} right={50} />
-            <StatBar label="Shots on Target" left={0} right={0} />
+            <StatBar label="Possession" left={t1Possession} right={t2Possession} />
+            <StatBar label="Shots on Target" left={t1Shots} right={t2Shots} />
             <StatBar label="Corners" left={t1Corners} right={t2Corners} />
             <StatBar label="Cards" left={t1Cards} right={t2Cards} />
             <StatBar label="Dangerous Attacks" left={t1Dangers} right={t2Dangers} />

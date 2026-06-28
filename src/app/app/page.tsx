@@ -36,7 +36,7 @@ export default function AppPage() {
 
   return (
     <div>
-      <DashboardHero liveCount={liveCount} totalMarkets={liveCount * 4} />
+      <DashboardHero liveCount={liveCount} />
 
       <div className="mb-8 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/[0.06] bg-white/[0.02] p-1">
         {TABS.map((tab) => (

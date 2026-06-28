@@ -3,15 +3,38 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function WalletButton() {
-  const { publicKey, connecting } = useWallet();
+  const { publicKey, connecting, wallet, connect } = useWallet();
   const { setVisible } = useWalletModal();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleClick = useCallback(() => {
+  // After user picks a wallet in the modal, actually connect
+  useEffect(() => {
+    if (!wallet || publicKey || connecting) return;
+
+    connect().catch((err) => {
+      console.error("Wallet connect failed:", err);
+      setError(err?.message || "Connection failed");
+    });
+  }, [wallet, publicKey, connecting, connect]);
+
+  const handleClick = useCallback(async () => {
+    setError(null);
+
+    if (wallet && !publicKey) {
+      try {
+        await connect();
+      } catch (err: any) {
+        console.error("Wallet connect failed:", err);
+        setError(err?.message || "Connection failed");
+      }
+      return;
+    }
+
     setVisible(true);
-  }, [setVisible]);
+  }, [wallet, publicKey, connect, setVisible]);
 
   if (connecting) {
     return (
@@ -30,6 +53,7 @@ export default function WalletButton() {
       <Link
         href="/app/profile"
         className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-[0.75rem] font-medium text-offwhite transition-all hover:border-amber-primary/30 hover:bg-amber-primary/10"
+        title={publicKey.toBase58()}
       >
         {short}
       </Link>
@@ -37,11 +61,18 @@ export default function WalletButton() {
   }
 
   return (
-    <button
-      onClick={handleClick}
-      className="rounded-full bg-amber-primary px-4 py-2 text-[0.75rem] font-semibold text-warm-dark transition-all hover:brightness-110"
-    >
-      Connect Wallet
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={handleClick}
+        className="rounded-full bg-amber-primary px-4 py-2 text-[0.75rem] font-semibold text-warm-dark transition-all hover:brightness-110"
+      >
+        {wallet ? `Connect ${wallet.adapter.name}` : "Connect Wallet"}
+      </button>
+      {error && (
+        <span className="max-w-[180px] truncate text-[0.6rem] text-red-400" title={error}>
+          {error}
+        </span>
+      )}
+    </div>
   );
 }

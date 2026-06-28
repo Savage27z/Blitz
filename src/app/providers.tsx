@@ -23,7 +23,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect={false}>
+      <WalletProvider
+        wallets={wallets}
+        autoConnect={false}
+        onError={(err) => console.error("Wallet error:", err)}
+      >
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

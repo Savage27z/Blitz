@@ -2,7 +2,7 @@
 
 ## One-liner
 
-Real-time prediction markets that live and die during a live FIFA World Cup 2026 match — powered by TxODDS Merkle-verified data on Solana.
+Real-time prediction markets that live and die during a live FIFA World Cup 2026 match — powered by TxODDS live data and Solana staking via TxLINE.
 
 ---
 
@@ -14,11 +14,11 @@ Traditional prediction markets are boring. You bet on "who wins?" and wait 90 mi
 
 Blitz generates **binary micro-markets in real-time** from live match events:
 
-- "Goal before 45'? YES / NO" (resolves at half-time)
-- "Next corner: Croatia or Ghana?" (resolves in ~2 minutes)
-- "Total goals over 2.5 by 60'?" (resolves at 60th minute)
+- "Next goal: Team A or Team B?" (resolves in ~3 minutes)
+- "Over X total goals by end of half?" (resolves at expiry)
+- "Another card before 75'?" (resolves on event or timeout)
 
-Markets open, get traded, and auto-settle **on-chain within minutes** while the game is still playing.
+Markets open, get traded, and auto-settle in the UI while the game is still playing. Stakes are recorded on-chain via TxLINE `create_intent`.
 
 ---
 
@@ -28,54 +28,50 @@ Markets open, get traded, and auto-settle **on-chain within minutes** while the 
 |---------|-------------------|
 | Real-time scores | SSE stream drives market generation |
 | Match events | Goals, corners, cards trigger new markets |
-| Merkle proofs | `stat-validation` API provides proofs for on-chain settlement |
 | Fixture data | Live World Cup 2026 schedule and participants |
-| On-chain validation | TxLINE program verifies proofs against daily Merkle roots |
+| Merkle proofs | `stat-validation` proxy ready for on-chain settlement |
+| Stat snapshots | Completed match scores via scores snapshot API |
 
-### On-Chain Flow
+### On-Chain Flow (staking)
 
 ```
-User stakes YES on "Goal before 45'"
+User stakes YES on "Next goal: Brazil or Argentina?"
   → create_intent (TxLINE program, Solana devnet)
-  → Intent stored in PDA with terms hash
+  → USDT escrowed in intent_vault PDA
+  → Intent stored with SHA-256 terms hash
+```
 
-Half-time arrives, no goal scored → NO wins
-  → Fetch Merkle proof from TxODDS /stat-validation
-  → claim_via_resolution (TxLINE program)
-  → Program verifies proof against on-chain root
-  → Winner receives payout
+### Settlement (current + roadmap)
+
+```
+Market timer expires → UI resolves outcome from live events
+  → Profile stake status updates (won/lost)
+  → Full on-chain claim via claim_via_resolution (requires execute_match pairing — next step)
 ```
 
 ---
 
 ## What We Built
 
-1. **Market Engine** — Generates binary markets from SSE events in real-time
-2. **SSE Integration** — Server-proxied streams from TxODDS with auth
-3. **On-chain Staking** — `create_intent` with proper PDA derivation and terms hashing
-4. **On-chain Settlement** — `claim_via_resolution` with Merkle proof fetching
-5. **API Activation Script** — Automated subscription + token flow
-6. **Full Production UI** — Real fixtures, live stats, pitch visualization, wallet connection
-
----
-
-## Technical Highlights
-
-- **Zero mock data** — All fixtures and scores are live from TxODDS
-- **Correct instruction encoding** — Manual Anchor discriminator + arg serialization for TxLINE
-- **PDA derivation** — order_intent, intent_vault, token_treasury, pricing_matrix
-- **SHA-256 terms hashing** — Deterministic market terms for on-chain verification
-- **Merkle proof consumption** — stat-validation proofs mapped to claim instruction format
+1. **Market Engine** — Generates binary markets from SSE/demo events in real-time
+2. **SSE Integration** — Server-proxied streams from TxODDS with JWT auto-refresh
+3. **On-chain Staking** — `create_intent` with correct PDA derivation and ATA creation
+4. **Settlement UI** — Auto-resolves markets from event feed; syncs profile stakes
+5. **API Activation Script** — `npm run activate-api` for TxODDS subscription
+6. **Production UI** — Real fixtures, live stats, pitch visualization, wallet connection
+7. **Demo Mode** — Full UX simulation when no live match is available
 
 ---
 
 ## Demo Script
 
-1. Open `/app` → See real upcoming World Cup 2026 fixtures
-2. Click into a match → See match header, pitch, stats
-3. Toggle "Demo Simulation" → Watch markets generate in real-time
-4. Connect wallet (Phantom) → Click YES/NO on a market → See on-chain intent
-5. Market resolves → Settlement with Merkle proof
+See [DEMO.md](./DEMO.md) for judge setup (wallet, devnet USDT, troubleshooting).
+
+1. Open `/app` → See real World Cup 2026 fixtures
+2. Open a match → Toggle **Demo Simulation**
+3. Watch markets generate from simulated events
+4. Connect wallet (Phantom devnet) → Stake on a market → On-chain intent confirmed
+5. Wait for resolution → Check settled markets + profile
 
 ---
 
@@ -87,7 +83,8 @@ Solo builder.
 
 ## Links
 
-- Live app: [deploy URL]
-- GitHub: [repo URL]
+- Live app: https://blitz-pied.vercel.app
+- GitHub: https://github.com/Savage27z/Blitz
+- Demo guide: [DEMO.md](./DEMO.md)
 - Devnet wallet: `9rLHZzcRtdtLPiU7s8q27CHfenAsRHVAbnDXuwoKvr2z`
 - TxLINE Program: `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J`

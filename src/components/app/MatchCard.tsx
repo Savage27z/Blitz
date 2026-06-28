@@ -123,8 +123,8 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
       {/* Bottom bar */}
       <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5">
         {isLive ? (
-          <span className="rounded-full bg-amber-primary/10 px-2.5 py-0.5 text-[0.625rem] font-semibold text-amber-primary">
-            4 markets live
+          <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 text-[0.625rem] font-semibold text-red-400">
+            Live now
           </span>
         ) : (
           <span className="text-[0.625rem] text-white/20">Group Stage</span>

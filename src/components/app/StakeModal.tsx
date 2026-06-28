@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -24,9 +24,16 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const stakeOnMarket = useMarketStore((s) => s.stakeOnMarket);
   const addStake = useUserStore((s) => s.addStake);
 
-  const { publicKey, wallet, signTransaction } = useWallet();
+  const { publicKey, wallet, signTransaction, connect } = useWallet();
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
+
+  // Connect after wallet selection from modal
+  useEffect(() => {
+    if (!publicKey && wallet && !submitting) {
+      connect().catch(() => {});
+    }
+  }, [wallet, publicKey, connect, submitting]);
 
   const numAmount = parseFloat(amount) || 0;
   const totalPool = market.totalStaked[0] + market.totalStaked[1] + numAmount;

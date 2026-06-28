@@ -57,51 +57,96 @@ function parseScoreEvent(raw: SoccerScoreEvent): MatchEvent | null {
   return null;
 }
 
+function extractStats(raw: SoccerScoreEvent) {
+  const stats = raw.stats as Record<string, any> | undefined;
+  const p1Shots =
+    stats?.Participant1?.ShotsOnTarget ??
+    stats?.participant1?.shotsOnTarget ??
+    0;
+  const p2Shots =
+    stats?.Participant2?.ShotsOnTarget ??
+    stats?.participant2?.shotsOnTarget ??
+    0;
+
+  const possession = typeof raw.possession === "number" ? raw.possession : 50;
+
+  return {
+    possession,
+    shotsOnTarget: [p1Shots, p2Shots] as [number, number],
+  };
+}
+
 export function useScoresStream(fixtureId: number | null) {
   const esRef = useRef<EventSource | null>(null);
-  const { addEvent, updateMatchState, setConnected } = useMarketStore();
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!fixtureId) return;
 
-    const url = `/api/proxy/scores-stream?fixtureId=${fixtureId}`;
-    const es = new EventSource(url);
-    esRef.current = es;
+    const { addEvent, updateMatchState, updateMatchStats, setConnected } =
+      useMarketStore.getState();
 
-    es.onopen = () => setConnected(true);
+    const connect = () => {
+      if (!mountedRef.current) return;
 
-    es.onmessage = (msg) => {
-      if (!msg.data || msg.data === "heartbeat") return;
-      try {
-        const raw = normalizeScoreEvent(JSON.parse(msg.data));
-        if (!raw.statusSoccerId) return;
-
-        const p1Goals = raw.scoreSoccer?.Participant1?.Total?.Goals ?? 0;
-        const p2Goals = raw.scoreSoccer?.Participant2?.Total?.Goals ?? 0;
-        const minute = (raw.dataSoccer as any)?.Minutes ?? (raw.dataSoccer as any)?.minutes ?? 0;
-
-        updateMatchState(raw.statusSoccerId as GameState, minute, [p1Goals, p2Goals]);
-
-        const event = parseScoreEvent(raw);
-        if (event) addEvent(event);
-      } catch {
-        // heartbeat or malformed
+      esRef.current?.close();
+      if (reconnectRef.current) {
+        clearTimeout(reconnectRef.current);
+        reconnectRef.current = null;
       }
+
+      const url = `/api/proxy/scores-stream?fixtureId=${fixtureId}`;
+      const es = new EventSource(url);
+      esRef.current = es;
+
+      es.onopen = () => setConnected(true);
+
+      es.onmessage = (msg) => {
+        if (!msg.data || msg.data === "heartbeat") return;
+        try {
+          const raw = normalizeScoreEvent(JSON.parse(msg.data));
+          if (!raw.statusSoccerId) return;
+
+          const p1Goals = raw.scoreSoccer?.Participant1?.Total?.Goals ?? 0;
+          const p2Goals = raw.scoreSoccer?.Participant2?.Total?.Goals ?? 0;
+          const minute = (raw.dataSoccer as any)?.Minutes ?? (raw.dataSoccer as any)?.minutes ?? 0;
+
+          updateMatchState(raw.statusSoccerId as GameState, minute, [p1Goals, p2Goals]);
+
+          const { possession, shotsOnTarget } = extractStats(raw);
+          updateMatchStats({ possession, shotsOnTarget });
+
+          const event = parseScoreEvent(raw);
+          if (event) addEvent(event);
+        } catch {
+          // heartbeat or malformed
+        }
+      };
+
+      es.onerror = () => {
+        setConnected(false);
+        es.close();
+        reconnectRef.current = setTimeout(() => {
+          if (mountedRef.current) connect();
+        }, 3000);
+      };
     };
 
-    es.onerror = () => {
-      setConnected(false);
-      es.close();
-      setTimeout(() => {
-        if (esRef.current === es) {
-          esRef.current = new EventSource(url);
-        }
-      }, 3000);
-    };
+    connect();
 
     return () => {
-      es.close();
+      mountedRef.current = false;
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      esRef.current?.close();
       setConnected(false);
     };
-  }, [fixtureId, addEvent, updateMatchState, setConnected]);
+  }, [fixtureId]);
 }

@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 
 interface Props {
   liveCount: number;
-  totalMarkets: number;
 }
 
-export default function DashboardHero({ liveCount, totalMarkets }: Props) {
+export default function DashboardHero({ liveCount }: Props) {
   return (
     <div className="relative mb-10 overflow-hidden rounded-3xl border border-white/[0.06] bg-gradient-to-br from-warm-dark via-[#1a1410] to-[#0d1a0d] p-8 md:p-10">
       {/* Atmospheric background elements */}
@@ -79,8 +78,8 @@ export default function DashboardHero({ liveCount, totalMarkets }: Props) {
 
           <div className="flex items-center gap-4 text-[0.75rem]">
             <div>
-              <span className="text-muted">Active Markets</span>
-              <span className="ml-2 font-mono font-semibold text-amber-primary">{totalMarkets}</span>
+              <span className="text-muted">Fixtures</span>
+              <span className="ml-2 font-mono font-semibold text-amber-primary">{liveCount} live</span>
             </div>
             <div className="h-4 w-px bg-white/[0.08]" />
             <div>

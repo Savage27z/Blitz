@@ -44,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-1 sm:flex">
+              <div className="flex items-center gap-1">
                 <NavLink href="/app" label="Matches" active={!isMatchView && !isProfile} />
                 <NavLink href="/app/profile" label="Profile" active={isProfile} />
               </div>

@@ -153,6 +153,17 @@ export default function ProfilePage() {
                     <span className="rounded-full bg-amber-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-primary">
                       {stake.outcomeLabel}
                     </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${
+                        stake.status === "won"
+                          ? "bg-green-500/10 text-green-400"
+                          : stake.status === "lost"
+                          ? "bg-red-500/10 text-red-400"
+                          : "bg-white/[0.06] text-muted"
+                      }`}
+                    >
+                      {stake.status}
+                    </span>
                     <span className="text-[0.65rem] text-muted">
                       {new Date(stake.timestamp).toLocaleString()}
                     </span>

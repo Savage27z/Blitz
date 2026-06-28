@@ -2,6 +2,13 @@ import { create } from "zustand";
 import type { MicroMarket, MatchEvent } from "@/lib/markets/types";
 import type { GameState, SoccerScore } from "@/lib/txodds/types";
 
+export interface MatchStats {
+  possession: number;
+  shotsOnTarget: [number, number];
+  corners: [number, number];
+  cards: [number, number];
+}
+
 interface MarketStoreState {
   fixtureId: number | null;
   team1Name: string;
@@ -13,11 +20,13 @@ interface MarketStoreState {
   activeMarkets: MicroMarket[];
   settledMarkets: MicroMarket[];
   connected: boolean;
+  matchStats: MatchStats;
 
   setFixtureInfo: (id: number, t1: string, t2: string) => void;
   setConnected: (v: boolean) => void;
   addEvent: (event: MatchEvent) => void;
   updateMatchState: (phase: GameState, minute: number, score: [number, number]) => void;
+  updateMatchStats: (stats: Partial<MatchStats>) => void;
   addMarket: (market: MicroMarket) => void;
   settleMarket: (marketId: string, result: 0 | 1, proofTxHash?: string) => void;
   stakeOnMarket: (marketId: string, outcome: 0 | 1, amount: number) => void;
@@ -35,6 +44,12 @@ export const useMarketStore = create<MarketStoreState>((set) => ({
   activeMarkets: [],
   settledMarkets: [],
   connected: false,
+  matchStats: {
+    possession: 50,
+    shotsOnTarget: [0, 0],
+    corners: [0, 0],
+    cards: [0, 0],
+  },
 
   setFixtureInfo: (id, t1, t2) => set({ fixtureId: id, team1Name: t1, team2Name: t2 }),
   setConnected: (v) => set({ connected: v }),
@@ -44,6 +59,9 @@ export const useMarketStore = create<MarketStoreState>((set) => ({
 
   updateMatchState: (phase, minute, score) =>
     set({ gamePhase: phase, matchMinute: minute, score }),
+
+  updateMatchStats: (stats) =>
+    set((s) => ({ matchStats: { ...s.matchStats, ...stats } })),
 
   addMarket: (market) =>
     set((s) => ({ activeMarkets: [market, ...s.activeMarkets] })),

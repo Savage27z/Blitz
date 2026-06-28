@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { useMarketStore } from "@/stores/marketStore";
-import { generateMarketsFromEvent } from "@/lib/markets/engine";
+import { generateMarketsFromEvent, resetEngine } from "@/lib/markets/engine";
 import type { MatchEvent } from "@/lib/markets/types";
+import type { GameState } from "@/lib/txodds/types";
 
 const DEMO_EVENTS: Omit<MatchEvent, "id" | "timestamp">[] = [
   { type: "possession", team: 1, minute: 53, detail: "Building up" },
@@ -23,43 +24,66 @@ const DEMO_EVENTS: Omit<MatchEvent, "id" | "timestamp">[] = [
   { type: "goal", team: 2, minute: 72, detail: "Head" },
 ];
 
+function phaseForMinute(minute: number): GameState {
+  if (minute >= 90) return "H2";
+  if (minute >= 45) return "H2";
+  return "H1";
+}
+
 export function useDemoSimulation(enabled: boolean) {
   const indexRef = useRef(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
-    const { fixtureId, team1Name, team2Name, gamePhase, score } = useMarketStore.getState();
+    if (!enabled) {
+      indexRef.current = 0;
+      return;
+    }
+
+    const { fixtureId } = useMarketStore.getState();
     if (!fixtureId) return;
 
-    intervalRef.current = setInterval(() => {
+    resetEngine();
+    indexRef.current = 0;
+    useMarketStore.getState().updateMatchState("H1", 52, [0, 0]);
+    useMarketStore.getState().setConnected(false);
+
+    const tick = () => {
       const state = useMarketStore.getState();
+      if (!state.fixtureId) return;
+
       if (indexRef.current >= DEMO_EVENTS.length) {
         indexRef.current = 0;
       }
 
       const template = DEMO_EVENTS[indexRef.current];
+      const newMinute = state.matchMinute + 1;
+      const phase = phaseForMinute(newMinute);
+
       const event: MatchEvent = {
         ...template,
         id: `demo-${Date.now()}-${indexRef.current}`,
         timestamp: Date.now(),
-        minute: state.matchMinute + 1,
+        minute: newMinute,
       };
 
-      const newMinute = state.matchMinute + 1;
       let newScore = [...state.score] as [number, number];
       if (event.type === "goal") {
         newScore[event.team - 1]++;
       }
 
       state.addEvent(event);
-      state.updateMatchState(state.gamePhase, newMinute, newScore);
+      state.updateMatchState(phase, newMinute, newScore);
 
       const markets = generateMarketsFromEvent(
         event,
-        state.fixtureId!,
-        state.gamePhase,
+        state.fixtureId,
+        phase,
         newScore,
         state.team1Name,
         state.team2Name,
@@ -67,7 +91,10 @@ export function useDemoSimulation(enabled: boolean) {
       markets.forEach((m) => state.addMarket(m));
 
       indexRef.current++;
-    }, 8000);
+    };
+
+    tick();
+    intervalRef.current = setInterval(tick, 6000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);

@@ -15,6 +15,7 @@ import SettledMarkets from "@/components/app/SettledMarkets";
 import MiniPitch from "@/components/app/MiniPitch";
 import LiveStats from "@/components/app/LiveStats";
 import { normalizeFixturesPayload, mapRawFixture } from "@/lib/txodds/fixtures";
+import { resetEngine } from "@/lib/markets/engine";
 import type { Fixture } from "@/lib/txodds/types";
 
 export default function MatchPage() {
@@ -31,6 +32,7 @@ export default function MatchPage() {
 
     setFixtureLoaded(false);
     setFixtureMeta(null);
+    resetEngine();
     const store = useMarketStore.getState();
     store.setFixtureInfo(fixtureId, "…", "…");
     useMarketStore.setState({
@@ -41,6 +43,12 @@ export default function MatchPage() {
       activeMarkets: [],
       settledMarkets: [],
       connected: false,
+      matchStats: {
+        possession: 50,
+        shotsOnTarget: [0, 0],
+        corners: [0, 0],
+        cards: [0, 0],
+      },
     });
 
     async function loadFixture() {
