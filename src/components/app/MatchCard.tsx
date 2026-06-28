@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight, Radio } from "lucide-react";
 import type { Fixture } from "@/lib/txodds/types";
 import { getFixtureCategory } from "@/hooks/useFixtures";
 import Flag from "@/components/app/Flag";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 function getMinuteDisplay(fixture: Fixture): string | null {
   const s = fixture.statusId || "NS";
@@ -13,7 +22,7 @@ function getMinuteDisplay(fixture: Fixture): string | null {
   return null;
 }
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function getStatusLabel(fixture: Fixture): string {
   const category = getFixtureCategory(fixture);
@@ -50,89 +59,81 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
   const minute = getMinuteDisplay(fixture);
 
   return (
-    <Link
-      href={`/app/match/${fixture.fixtureId}`}
-      className="group relative block overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:translate-y-[-1px]"
-    >
-      {/* Live top accent */}
-      {isLive && (
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
-      )}
-
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3">
-        <div className="flex items-center gap-2">
-          {isLive && (
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-40" />
-              <span className="inline-flex h-2 w-2 rounded-full bg-red-500" />
-            </span>
-          )}
-          <span className="font-mono text-[0.65rem] uppercase tracking-wider text-white/40">
-            {getStatusLabel(fixture)}
-          </span>
-          {minute && (
-            <span className="font-mono text-[0.65rem] font-semibold text-amber-primary">{minute}</span>
-          )}
-        </div>
-        <span className="rounded-full border border-amber-primary/20 bg-amber-primary/5 px-2 py-0.5 text-[0.55rem] font-medium uppercase tracking-wider text-amber-primary/80">
-          {fixture.competitionName || "World Cup"}
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div className="px-5 py-5">
-        <div className="flex items-center">
-          {/* Team 1 */}
-          <div className="flex flex-1 items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
-              <Flag team={fixture.participant1Name} size={28} />
-            </div>
-            <span className="text-[0.9375rem] font-semibold text-offwhite">
-              {fixture.participant1Name}
-            </span>
-          </div>
-
-          {/* Score / VS */}
-          <div className="mx-4">
-            {isUpcoming ? (
-              <span className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-[0.75rem] font-medium text-white/30">
-                vs
+    <Link href={`/app/match/${fixture.fixtureId}`} className="block h-full">
+      <Card
+        className={cn(
+          "h-full transition-colors hover:border-primary/30 hover:bg-card/80",
+          isLive && "border-destructive/30"
+        )}
+      >
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-0">
+          <div className="flex items-center gap-2">
+            {isLive && (
+              <Badge variant="destructive" className="gap-1">
+                <Radio className="size-3" />
+                Live
+              </Badge>
+            )}
+            {!isLive && (
+              <span className="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+                {getStatusLabel(fixture)}
               </span>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/30 px-4 py-2 font-mono text-xl font-bold text-offwhite">
-                <span>{p1Goals}</span>
-                <span className="text-[0.75rem] text-white/20">–</span>
-                <span>{p2Goals}</span>
-              </div>
+            )}
+            {minute && (
+              <span className="font-mono text-xs font-semibold text-primary">{minute}</span>
             )}
           </div>
+          <Badge variant="outline" className="text-[0.65rem] uppercase tracking-wide">
+            {fixture.competitionName || "World Cup"}
+          </Badge>
+        </CardHeader>
 
-          {/* Team 2 */}
-          <div className="flex flex-1 items-center justify-end gap-3">
-            <span className="text-[0.9375rem] font-semibold text-offwhite">
-              {fixture.participant2Name}
-            </span>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xl">
-              <Flag team={fixture.participant2Name} size={28} />
+        <CardContent className="py-6">
+          <div className="flex items-center gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-secondary">
+                <Flag team={fixture.participant1Name} size={28} />
+              </div>
+              <span className="truncate font-medium">{fixture.participant1Name}</span>
+            </div>
+
+            <div className="shrink-0">
+              {isUpcoming ? (
+                <span className="rounded-md border bg-secondary px-3 py-1.5 text-xs text-muted-foreground">
+                  vs
+                </span>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border bg-background px-4 py-2 font-mono text-xl font-bold tabular-nums">
+                  <span>{p1Goals}</span>
+                  <span className="text-sm text-muted-foreground">–</span>
+                  <span>{p2Goals}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+              <span className="truncate text-right font-medium">{fixture.participant2Name}</span>
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-secondary">
+                <Flag team={fixture.participant2Name} size={28} />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
 
-      {/* Bottom bar */}
-      <div className="flex items-center justify-between border-t border-white/[0.04] px-5 py-2.5">
-        {isLive ? (
-          <span className="rounded-full bg-amber-primary/10 px-2.5 py-0.5 text-[0.625rem] font-semibold text-amber-primary">
-            4 markets live
+        <CardFooter className="justify-between border-t bg-muted/30">
+          {isLive ? (
+            <Badge variant="secondary" className="text-primary">
+              4 markets live
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">Group Stage</span>
+          )}
+          <span className="flex items-center gap-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover/card:opacity-100">
+            {isCompleted ? "View results" : isLive ? "Trade now" : "Preview"}
+            <ArrowRight className="size-3" />
           </span>
-        ) : (
-          <span className="text-[0.625rem] text-white/20">Group Stage</span>
-        )}
-        <span className="text-[0.6875rem] font-medium text-amber-primary opacity-0 transition-all duration-200 group-hover:opacity-100">
-          {isCompleted ? "View results →" : isLive ? "Trade now →" : "Preview →"}
-        </span>
-      </div>
+        </CardFooter>
+      </Card>
     </Link>
   );
 }

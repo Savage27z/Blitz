@@ -1,6 +1,9 @@
 "use client";
 
-import { getCountryCode } from "@/lib/flags";
+import { useState } from "react";
+import Image from "next/image";
+import { getCountryCode, getFlagUrl } from "@/lib/flags";
+import { cn } from "@/lib/utils";
 
 interface Props {
   team: string;
@@ -8,32 +11,43 @@ interface Props {
   className?: string;
 }
 
-export default function Flag({ team, size = 28, className = "" }: Props) {
-  const code = getCountryCode(team);
+function FlagFallback({ size, className }: { size: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center rounded-md border bg-muted text-[0.55rem] font-bold uppercase text-muted-foreground",
+        className
+      )}
+      style={{ width: size, height: Math.round(size * 0.72) }}
+    >
+      ?
+    </span>
+  );
+}
 
-  if (!code) {
-    return (
-      <span
-        className={`inline-flex items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.04] text-[0.55rem] font-bold uppercase text-white/30 ${className}`}
-        style={{ width: size, height: Math.round(size * 0.72) }}
-      >
-        ?
-      </span>
-    );
+export default function Flag({ team, size = 28, className = "" }: Props) {
+  const [failed, setFailed] = useState(false);
+  const code = getCountryCode(team);
+  const src = getFlagUrl(team, size);
+  const height = Math.round(size * 0.72);
+
+  if (!code || !src || failed) {
+    return <FlagFallback size={size} className={className} />;
   }
 
-  const w = size * 2;
-
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`https://flagcdn.com/w${w}/${code}.png`}
-      srcSet={`https://flagcdn.com/w${w}/${code}.png 1x, https://flagcdn.com/w${Math.round(w * 1.5)}/${code}.png 2x`}
+    <Image
+      src={src}
       alt={`${team} flag`}
       width={size}
-      height={Math.round(size * 0.72)}
-      className={`rounded-md object-cover shadow-[0_1px_4px_rgba(0,0,0,0.4)] ring-1 ring-white/[0.08] ${className}`}
-      loading="lazy"
+      height={height}
+      className={cn(
+        "rounded-md object-cover ring-1 ring-border",
+        className
+      )}
+      sizes={`${size}px`}
+      unoptimized
+      onError={() => setFailed(true)}
     />
   );
 }

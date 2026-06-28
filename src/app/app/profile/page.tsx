@@ -2,11 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { ExternalLink, User, Wallet } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useUserStore } from "@/stores/userStore";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
   const { publicKey, disconnect } = useWallet();
@@ -32,150 +43,133 @@ export default function ProfilePage() {
 
   if (!publicKey) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-          <span className="text-2xl text-white/30">👤</span>
-        </div>
-        <h1 className="font-display text-2xl text-offwhite">Your Profile</h1>
-        <p className="mt-2 max-w-sm text-[0.875rem] text-muted">
-          Connect your wallet to view your stakes, transaction history, and activity.
-        </p>
-        <button
-          onClick={() => setVisible(true)}
-          className="mt-8 rounded-full bg-amber-primary px-8 py-3 text-[0.875rem] font-semibold text-warm-dark transition-all hover:brightness-110"
-        >
-          Connect Wallet
-        </button>
-      </div>
+      <Card className="mx-auto max-w-md">
+        <CardContent className="flex flex-col items-center py-12 text-center">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-xl border bg-secondary">
+            <User className="size-6 text-muted-foreground" />
+          </div>
+          <CardTitle className="font-display text-2xl">Your Profile</CardTitle>
+          <CardDescription className="mt-2 max-w-sm">
+            Connect your wallet to view your stakes, transaction history, and activity.
+          </CardDescription>
+          <Button className="mt-6" onClick={() => setVisible(true)}>
+            <Wallet className="size-4" />
+            Connect Wallet
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header card */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.3)]"
-      >
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-primary/[0.06] blur-3xl" />
-
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-primary/20 bg-amber-primary/10">
-              <span className="font-mono text-xl font-bold text-amber-primary">
-                {address!.slice(0, 2).toUpperCase()}
-              </span>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <Avatar className="size-16 rounded-xl">
+                <AvatarFallback className="rounded-xl bg-primary/10 font-mono text-lg text-primary">
+                  {address!.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardDescription>Connected Wallet</CardDescription>
+                <button
+                  onClick={copyAddress}
+                  className="mt-1 flex items-center gap-2 font-mono text-base transition-opacity hover:opacity-70"
+                >
+                  {short}
+                  <span className="text-xs text-primary">{copied ? "Copied!" : "Copy"}</span>
+                </button>
+                <p className="mt-1 text-xs text-muted-foreground">Solana Devnet</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[0.65rem] font-medium uppercase tracking-widest text-white/40">
-                Connected Wallet
-              </p>
-              <button
-                onClick={copyAddress}
-                className="mt-1 flex items-center gap-2 font-mono text-[1rem] text-offwhite transition-opacity hover:opacity-70"
-              >
-                {short}
-                <span className="text-[0.65rem] text-amber-primary">
-                  {copied ? "Copied!" : "Copy"}
-                </span>
-              </button>
-              <p className="mt-1 text-[0.75rem] text-muted">Solana Devnet</p>
+
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" render={
+                <a
+                  href={`https://solscan.io/account/${address}${SOLSCAN_CLUSTER_PARAM}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }>
+                <ExternalLink className="size-3.5" />
+                Solscan
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => disconnect()}>
+                Disconnect
+              </Button>
             </div>
           </div>
+        </CardHeader>
+      </Card>
 
-          <div className="flex gap-3">
-            <a
-              href={`https://solscan.io/account/${address}${SOLSCAN_CLUSTER_PARAM}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-[0.75rem] font-medium text-offwhite transition-all hover:bg-white/[0.08]"
-            >
-              View on Solscan
-            </a>
-            <button
-              onClick={() => disconnect()}
-              className="rounded-full border border-red-500/20 bg-red-500/[0.06] px-4 py-2 text-[0.75rem] font-medium text-red-400 transition-all hover:bg-red-500/10"
-            >
-              Disconnect
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "Total Staked", value: `$${totalStaked.toFixed(2)}` },
           { label: "Active Positions", value: activeStakes.toString() },
           { label: "Total Trades", value: stakes.length.toString() },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5"
-          >
-            <p className="text-[0.65rem] font-medium uppercase tracking-widest text-white/40">
-              {stat.label}
-            </p>
-            <p className="mt-2 font-mono text-2xl font-bold text-offwhite">{stat.value}</p>
-          </div>
+          <Card key={stat.label}>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+              <p className="mt-2 font-mono text-2xl font-bold tabular-nums">{stat.value}</p>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Stake history */}
-      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
-        <div className="border-b border-white/[0.06] px-6 py-4">
-          <h2 className="text-[0.875rem] font-semibold text-offwhite">Stake History</h2>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Stake History</CardTitle>
+        </CardHeader>
 
         {stakes.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-[0.875rem] text-muted">No stakes yet</p>
-            <p className="text-[0.75rem] text-white/25">
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-sm text-muted-foreground">No stakes yet</p>
+            <p className="text-xs text-muted-foreground">
               Place a prediction on a live match to see it here
             </p>
-            <Link
-              href="/app"
-              className="mt-2 rounded-full bg-amber-primary px-5 py-2 text-[0.8125rem] font-semibold text-warm-dark"
-            >
+            <Button size="sm" render={<Link href="/app" />}>
               Browse Matches
-            </Link>
-          </div>
+            </Button>
+          </CardContent>
         ) : (
-          <div className="divide-y divide-white/[0.04]">
-            {stakes.map((stake) => (
-              <div key={stake.id} className="flex items-center justify-between gap-4 px-6 py-4">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[0.875rem] font-medium text-offwhite">
-                    {stake.question}
-                  </p>
-                  <div className="mt-1 flex items-center gap-3">
-                    <span className="rounded-full bg-amber-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-primary">
-                      {stake.outcomeLabel}
-                    </span>
-                    <span className="text-[0.65rem] text-muted">
-                      {new Date(stake.timestamp).toLocaleString()}
-                    </span>
+          <CardContent className="p-0">
+            {stakes.map((stake, i) => (
+              <div key={stake.id}>
+                {i > 0 && <Separator />}
+                <div className="flex items-center justify-between gap-4 px-6 py-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{stake.question}</p>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <Badge variant="secondary" className="text-primary">
+                        {stake.outcomeLabel}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(stake.timestamp).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-mono text-[0.875rem] font-semibold text-offwhite">
-                    ${stake.amount.toFixed(2)}
-                  </span>
-                  <a
-                    href={`${SOLSCAN_BASE}/${stake.txHash}${SOLSCAN_CLUSTER_PARAM}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[0.65rem] text-amber-primary hover:underline"
-                  >
-                    View tx →
-                  </a>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="font-mono text-sm font-semibold tabular-nums">
+                      ${stake.amount.toFixed(2)}
+                    </span>
+                    <a
+                      href={`${SOLSCAN_BASE}/${stake.txHash}${SOLSCAN_CLUSTER_PARAM}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      View tx
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -7,8 +7,8 @@
   --color-cream: #FAF7F2;
   --color-cream-dark: #F0EBE3;
   --color-offwhite: #F5F0E8;
-  --color-muted: #7A756C;
-  --color-muted-light: #A8A29E;
+  --color-muted: #1c1915;
+  --color-muted-foreground: #7A756C;
   --color-amber-primary: #F59E0B;
   --color-amber-deep: #B45309;
   --color-amber-glow: #FBBF24;
@@ -21,6 +21,26 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+  /* shadcn semantic tokens — mapped to Blitz palette */
+  --color-background: var(--color-warm-dark);
+  --color-foreground: var(--color-offwhite);
+  --color-card: #131110;
+  --color-card-foreground: var(--color-offwhite);
+  --color-popover: #131110;
+  --color-popover-foreground: var(--color-offwhite);
+  --color-primary: var(--color-amber-primary);
+  --color-primary-foreground: var(--color-warm-dark);
+  --color-secondary: #1c1915;
+  --color-secondary-foreground: var(--color-offwhite);
+  --color-muted-light: #A8A29E;
+  --color-accent: #1c1915;
+  --color-accent-foreground: var(--color-offwhite);
+  --color-destructive: #ef4444;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.12);
+  --color-ring: var(--color-amber-primary);
+  --radius: 0.75rem;
 }
 
 * {
@@ -37,6 +57,12 @@ body {
   background-color: var(--color-warm-dark);
   color: var(--color-offwhite);
   overflow-x: hidden;
+}
+
+@layer utilities {
+  .text-muted {
+    color: var(--color-muted-foreground);
+  }
 }
 
 ::selection {

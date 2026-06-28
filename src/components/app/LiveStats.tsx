@@ -1,8 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { BarChart3, Clock } from "lucide-react";
 import { useMarketStore } from "@/stores/marketStore";
 import Flag from "@/components/app/Flag";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 interface StatBarProps {
   label: string;
@@ -13,28 +17,20 @@ interface StatBarProps {
 function StatBar({ label, left, right }: StatBarProps) {
   const total = left + right || 1;
   const leftPct = (left / total) * 100;
-  const rightPct = (right / total) * 100;
 
   return (
-    <div className="group">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">{left}</span>
-        <span className="text-[0.6rem] font-medium uppercase tracking-widest text-white/30 transition-colors group-hover:text-white/50">{label}</span>
-        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">{right}</span>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm tabular-nums">
+        <span className="font-mono font-medium">{left}</span>
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="font-mono font-medium">{right}</span>
       </div>
-      <div className="flex h-1 gap-0.5 overflow-hidden rounded-full">
-        <motion.div
-          initial={{ width: "50%" }}
-          animate={{ width: `${leftPct}%` }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-full bg-amber-primary"
-        />
-        <motion.div
-          initial={{ width: "50%" }}
-          animate={{ width: `${rightPct}%` }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-full bg-white/20"
-        />
+      <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
+        <Progress value={leftPct} className="w-full gap-0">
+          <ProgressTrack className="h-1.5 bg-transparent">
+            <ProgressIndicator />
+          </ProgressTrack>
+        </Progress>
       </div>
     </div>
   );
@@ -53,35 +49,36 @@ export default function LiveStats() {
   const t2Dangers = events.filter((e) => e.type === "danger" && e.team === 2).length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.03] to-transparent shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
           <Flag team={team1Name} size={22} />
-          <span className="text-[0.8125rem] font-semibold text-offwhite">{team1Name}</span>
+          <span className="text-sm font-semibold">{team1Name}</span>
         </div>
-        <span className="rounded-full border border-white/[0.06] bg-white/[0.03] px-2.5 py-0.5 text-[0.55rem] font-medium uppercase tracking-widest text-white/40">
+        <Badge variant="outline" className="gap-1">
+          <BarChart3 className="size-3" />
           Stats
-        </span>
+        </Badge>
         <div className="flex items-center gap-2">
-          <span className="text-[0.8125rem] font-semibold text-offwhite">{team2Name}</span>
+          <span className="text-sm font-semibold">{team2Name}</span>
           <Flag team={team2Name} size={22} />
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Body */}
-      <div className="p-5">
+      <Separator />
+
+      <CardContent className="pt-6">
         {!hasData ? (
-          <div className="flex flex-col items-center gap-2 py-6">
-            <div className="h-8 w-8 rounded-full border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
-              <span className="text-[0.75rem] text-white/20">⏱</span>
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <div className="flex size-10 items-center justify-center rounded-full border bg-secondary">
+              <Clock className="size-4 text-muted-foreground" />
             </div>
-            <p className="text-[0.8125rem] text-white/30">
+            <p className="text-sm text-muted-foreground">
               Stats will appear when the match is live
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <StatBar label="Possession" left={50} right={50} />
             <StatBar label="Shots on Target" left={0} right={0} />
             <StatBar label="Corners" left={t1Corners} right={t2Corners} />
@@ -89,7 +86,7 @@ export default function LiveStats() {
             <StatBar label="Dangerous Attacks" left={t1Dangers} right={t2Dangers} />
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

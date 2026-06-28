@@ -59,13 +59,21 @@ export function getCountryCode(teamName: string): string | null {
   return COUNTRY_CODES[teamName] ?? null;
 }
 
+/** flagcdn.com only serves these widths — anything else 404s */
+const FLAGCDN_WIDTHS = [20, 40, 80, 160, 320, 640] as const;
+
+export function snapFlagcdnWidth(displaySize: number): number {
+  const min = Math.max(displaySize * 2, 20);
+  return FLAGCDN_WIDTHS.find((w) => w >= min) ?? 640;
+}
+
 /** @deprecated use Flag component instead */
 export function getFlag(teamName: string): string {
   return COUNTRY_CODES[teamName] ? "" : "🏳️";
 }
 
-export function getFlagUrl(teamName: string, width = 80): string | null {
+export function getFlagUrl(teamName: string, displaySize = 28): string | null {
   const code = getCountryCode(teamName);
   if (!code) return null;
-  return `https://flagcdn.com/w${width}/${code}.png`;
+  return `https://flagcdn.com/w${snapFlagcdnWidth(displaySize)}/${code}.png`;
 }

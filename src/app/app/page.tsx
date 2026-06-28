@@ -1,14 +1,17 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, CheckCircle2, Radio } from "lucide-react";
 import { useFixtures, FixtureFilter, isFixtureLive, getFixtureCategory } from "@/hooks/useFixtures";
 import MatchCard from "@/components/app/MatchCard";
 import DashboardHero from "@/components/app/DashboardHero";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const TABS: { id: FixtureFilter; label: string }[] = [
-  { id: "live", label: "🔴 Live Now" },
-  { id: "upcoming", label: "📅 Upcoming" },
-  { id: "completed", label: "✓ Completed" },
+const TABS: { id: FixtureFilter; label: string; icon: React.ReactNode }[] = [
+  { id: "live", label: "Live", icon: <Radio className="size-3.5" /> },
+  { id: "upcoming", label: "Upcoming", icon: <Calendar className="size-3.5" /> },
+  { id: "completed", label: "Completed", icon: <CheckCircle2 className="size-3.5" /> },
 ];
 
 export default function AppPage() {
@@ -28,91 +31,72 @@ export default function AppPage() {
     completed: "No completed matches yet",
   };
 
+  const sortedFixtures = [...fixtures].sort((a, b) =>
+    filter === "completed" ? b.startTime - a.startTime : a.startTime - b.startTime
+  );
+
   return (
     <div>
       <DashboardHero liveCount={liveCount} totalMarkets={liveCount * 4} />
 
-      {/* Filter tabs */}
-      <div className="mb-8 flex items-center gap-1 overflow-x-auto rounded-full border border-white/[0.06] bg-white/[0.02] p-1 w-fit max-w-full">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            className={`rounded-full px-5 py-2 text-[0.8125rem] font-medium transition-all duration-300 ${
-              filter === tab.id
-                ? "bg-amber-primary text-warm-dark"
-                : "text-muted hover:text-offwhite"
-            }`}
-          >
-            {tab.label}
-            {!loading && tabCounts[tab.id] > 0 && (
-              <span className={`ml-1.5 font-mono text-[0.65rem] ${
-                filter === tab.id ? "text-warm-dark/60" : "text-white/30"
-              }`}>
-                {tabCounts[tab.id]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {loading && (
-        <div className="flex flex-col items-center gap-4 py-20">
-          <div className="flex items-center gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                className="h-1.5 w-1.5 rounded-full bg-amber-primary"
-              />
-            ))}
-          </div>
-          <span className="text-[0.8125rem] text-muted">Loading matches...</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
-          <p className="text-[0.875rem] text-red-400">{error}</p>
-          <p className="mt-1 text-[0.75rem] text-muted">
-            Check your TxODDS credentials in .env.local
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && fixtures.length === 0 && (
-        <div className="py-20 text-center">
-          <p className="text-muted">{emptyMessages[filter]}</p>
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={filter}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="grid gap-4 sm:grid-cols-2"
-        >
-          {[...fixtures]
-            .sort((a, b) =>
-              filter === "completed" ? b.startTime - a.startTime : a.startTime - b.startTime
-            )
-            .map((f, i) => (
-            <motion.div
-              key={f.fixtureId}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <MatchCard fixture={f} />
-            </motion.div>
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as FixtureFilter)} className="mb-8">
+        <TabsList variant="line">
+          {TABS.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} className="gap-1.5">
+              {tab.icon}
+              {tab.label}
+              {!loading && tabCounts[tab.id] > 0 && (
+                <span className="ml-0.5 font-mono text-xs text-muted-foreground">
+                  {tabCounts[tab.id]}
+                </span>
+              )}
+            </TabsTrigger>
           ))}
-        </motion.div>
-      </AnimatePresence>
+        </TabsList>
+
+        {TABS.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} className="mt-6">
+            {loading && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="space-y-4 pt-6">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-4 w-32" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {error && (
+              <Card className="border-destructive/30 bg-destructive/5">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-destructive">{error}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Check your TxODDS credentials in .env.local
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!loading && !error && sortedFixtures.length === 0 && (
+              <div className="py-16 text-center">
+                <p className="text-muted-foreground">{emptyMessages[tab.id]}</p>
+              </div>
+            )}
+
+            {!loading && !error && sortedFixtures.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {sortedFixtures.map((f) => (
+                  <MatchCard key={f.fixtureId} fixture={f} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
