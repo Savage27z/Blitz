@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
@@ -29,6 +29,12 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
 
+  useEffect(() => {
+    if (!publicKey && wallet && !submitting) {
+      connect().catch(() => {});
+    }
+  }, [wallet, publicKey, connect, submitting]);
+
   const numAmount = parseFloat(amount) || 0;
   const totalPool = market.totalStaked[0] + market.totalStaked[1] + numAmount;
   const yourShare = totalPool > 0 ? numAmount / (market.totalStaked[outcome] + numAmount) : 0;
@@ -37,37 +43,20 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const handleStake = async () => {
     if (numAmount <= 0) return;
 
+    if (!publicKey || !signTransaction) {
+      setVisible(true);
+      return;
+    }
+
     setSubmitting(true);
     setPhase("preparing");
     setError(null);
 
     try {
-      let activeWallet = wallet?.adapter;
-      let activePublicKey = publicKey;
-
-      if (!activePublicKey || !signTransaction) {
-        if (!wallet) {
-          setVisible(true);
-          setSubmitting(false);
-          setPhase(null);
-          return;
-        }
-        await connect();
-        activeWallet = wallet.adapter;
-        activePublicKey = wallet.adapter.publicKey ?? null;
-      }
-
-      if (!activePublicKey || !signTransaction) {
-        setError("Wallet not connected");
-        setSubmitting(false);
-        setPhase(null);
-        return;
-      }
-
       const signature = await createIntent({
         connection,
         wallet: {
-          publicKey: activePublicKey,
+          publicKey,
           signTransaction,
         },
         fixtureId: market.fixtureId,
@@ -80,7 +69,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
       stakeOnMarket(market.id, outcome, numAmount);
       addStake({
         id: `${signature}-${Date.now()}`,
-        wallet: activePublicKey.toBase58(),
+        wallet: publicKey.toBase58(),
         fixtureId: market.fixtureId,
         marketId: market.id,
         question: market.question,
