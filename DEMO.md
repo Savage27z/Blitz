@@ -13,10 +13,9 @@ https://blitz-pied.vercel.app
 
 ### 2. Fund wallet
 
-- **SOL** (gas): use the [Solana devnet faucet](https://faucet.solana.com/)
-- **USDT** (staking): you need devnet USDT at mint `ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh`
-  - If you have devnet USDT, send a small amount to your wallet
-  - The app auto-creates your USDT token account on first stake
+- **SOL** (gas + staking): use the [Solana devnet faucet](https://faucet.solana.com/)
+  - Stakes use native SOL (auto-wrapped to WSOL on-chain)
+  - Keep ~0.01 SOL extra for transaction fees
 
 ### 3. Activate TxODDS API (for local dev only)
 
@@ -51,7 +50,7 @@ Production (Vercel) already has credentials configured.
 
 1. Click **YES** or **NO** on an open market
 2. Connect Phantom (devnet)
-3. Enter stake amount (e.g. $1 USDT) → **Stake**
+3. Enter stake amount (e.g. 0.05 SOL) → **Stake**
 4. Confirm transaction → Solscan link appears
 
 ### Step 4 — Settlement
@@ -81,7 +80,7 @@ Stakes are recorded on-chain as order intents. Full Merkle-verified payout requi
 | Issue | Fix |
 |-------|-----|
 | No markets in demo | Ensure Demo Simulation is ON and match isn't completed |
-| Stake fails "insufficient funds" | Fund devnet USDT + SOL |
+| Stake fails "insufficient funds" | Airdrop more devnet SOL (~0.1 SOL minimum) |
 | Stake fails program error | Check wallet is on devnet, not mainnet |
 | No live matches | Use Demo Simulation on any upcoming fixture |
 | Completed tab empty | Games appear ~2 hours after kickoff |

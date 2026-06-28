@@ -36,8 +36,8 @@ Markets open, get traded, and auto-settle in the UI while the game is still play
 
 ```
 User stakes YES on "Next goal: Brazil or Argentina?"
-  → create_intent (TxLINE program, Solana devnet)
-  → USDT escrowed in intent_vault PDA
+  → create_intent (TxLINE program, wrapped SOL escrow)
+  → SOL escrowed in intent_vault PDA
   → Intent stored with SHA-256 terms hash
 ```
 
@@ -65,7 +65,7 @@ Market timer expires → UI resolves outcome from live events
 
 ## Demo Script
 
-See [DEMO.md](./DEMO.md) for judge setup (wallet, devnet USDT, troubleshooting).
+See [DEMO.md](./DEMO.md) for judge setup (wallet, devnet SOL, troubleshooting).
 
 1. Open `/app` → See real World Cup 2026 fixtures
 2. Open a match → Toggle **Demo Simulation**

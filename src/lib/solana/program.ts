@@ -2,15 +2,21 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
+  type Connection,
+  type VersionedTransaction,
 } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountInstruction,
+  createSyncNativeInstruction,
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { TXLINE_PROGRAM_ID, USDT_MINT } from "./constants";
-import type { AnchorWallet } from "@solana/wallet-adapter-react";
-import type { Connection } from "@solana/web3.js";
+import { TXLINE_PROGRAM_ID, STAKE_MINT, LAMPORTS_PER_SOL } from "./constants";
+
+export type StakeWallet = {
+  publicKey: PublicKey;
+  signTransaction: <T extends Transaction | VersionedTransaction>(tx: T) => Promise<T>;
+};
 
 export type CreateIntentPhase = "preparing" | "signing" | "sending" | "confirming";
 
@@ -60,17 +66,19 @@ export function deriveIntentVaultPda(orderIntentPda: PublicKey): [PublicKey, num
 
 export interface CreateIntentParams {
   connection: Connection;
-  wallet: AnchorWallet;
+  wallet: StakeWallet;
   fixtureId: number;
   marketType: string;
   outcome: number;
+  /** Stake amount in SOL (e.g. 0.1) */
   amount: number;
   expirationMinutes?: number;
   onPhase?: (phase: CreateIntentPhase) => void;
 }
 
 /**
- * Create an on-chain intent via the TxLINE program.
+ * Stake SOL on-chain via TxLINE create_intent.
+ * Native SOL is wrapped to WSOL in the same transaction before escrow.
  */
 export async function createIntent(params: CreateIntentParams): Promise<string> {
   const {
@@ -86,6 +94,11 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
 
   onPhase?.("preparing");
 
+  const lamports = BigInt(Math.floor(amount * LAMPORTS_PER_SOL));
+  if (lamports <= BigInt(0)) {
+    throw new Error("Stake amount must be greater than 0");
+  }
+
   const termsHash = await computeTermsHash(fixtureId, marketType, outcome);
   const intentId = BigInt(Date.now());
 
@@ -93,13 +106,12 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   const [intentVault] = deriveIntentVaultPda(orderIntentPda);
 
   const makerTokenAccount = getAssociatedTokenAddressSync(
-    USDT_MINT,
+    STAKE_MINT,
     wallet.publicKey,
     false,
     TOKEN_PROGRAM_ID
   );
 
-  const depositAmount = BigInt(Math.floor(amount * 1_000_000));
   const expirationTs = BigInt(Math.floor(Date.now() / 1000) + expirationMinutes * 60);
   const claimPeriod = 3600;
 
@@ -109,7 +121,7 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   intentIdBuf.writeBigUInt64LE(intentId);
 
   const depositBuf = Buffer.alloc(8);
-  depositBuf.writeBigUInt64LE(depositAmount);
+  depositBuf.writeBigUInt64LE(lamports);
 
   const expirationBuf = Buffer.alloc(8);
   expirationBuf.writeBigInt64LE(expirationTs);
@@ -137,21 +149,29 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
       { pubkey: orderIntentPda, isSigner: false, isWritable: true },
       { pubkey: intentVault, isSigner: false, isWritable: true },
       { pubkey: makerTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: USDT_MINT, isSigner: false, isWritable: false },
+      { pubkey: STAKE_MINT, isSigner: false, isWritable: false },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,
   };
 
-  const [blockhashResult, ataInfo] = await withTimeout(
+  const [blockhashResult, ataInfo, balance] = await withTimeout(
     Promise.all([
       connection.getLatestBlockhash("confirmed"),
       connection.getAccountInfo(makerTokenAccount, "confirmed"),
+      connection.getBalance(wallet.publicKey, "confirmed"),
     ]),
     12_000,
     "RPC request"
   );
+
+  const feeBuffer = BigInt(10_000_000); // ~0.01 SOL for fees + rent
+  if (BigInt(balance) < lamports + feeBuffer) {
+    throw new Error(
+      `Insufficient SOL — need ~${amount.toFixed(3)} SOL plus ~0.01 SOL for fees`
+    );
+  }
 
   const { blockhash, lastValidBlockHeight } = blockhashResult;
 
@@ -167,12 +187,20 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
         wallet.publicKey,
         makerTokenAccount,
         wallet.publicKey,
-        USDT_MINT
+        STAKE_MINT
       )
     );
   }
 
-  tx.add(instruction);
+  tx.add(
+    SystemProgram.transfer({
+      fromPubkey: wallet.publicKey,
+      toPubkey: makerTokenAccount,
+      lamports: Number(lamports),
+    }),
+    createSyncNativeInstruction(makerTokenAccount),
+    instruction
+  );
 
   onPhase?.("signing");
   const signedTx = await wallet.signTransaction(tx);

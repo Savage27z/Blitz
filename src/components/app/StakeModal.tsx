@@ -57,7 +57,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         activePublicKey = wallet.adapter.publicKey ?? null;
       }
 
-      if (!activePublicKey || !activeWallet?.signTransaction) {
+      if (!activePublicKey || !signTransaction) {
         setError("Wallet not connected");
         setSubmitting(false);
         setPhase(null);
@@ -68,8 +68,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         connection,
         wallet: {
           publicKey: activePublicKey,
-          signTransaction: activeWallet.signTransaction.bind(activeWallet),
-          signAllTransactions: activeWallet.signAllTransactions?.bind(activeWallet),
+          signTransaction,
         },
         fixtureId: market.fixtureId,
         marketType: market.type,
@@ -135,7 +134,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
               <h3 className="text-lg font-medium text-offwhite">Stake Confirmed On-Chain</h3>
               <p className="mt-2 text-[0.8125rem] text-muted">
-                {numAmount} USDT on &quot;{market.outcomes[outcome]}&quot;
+                {numAmount} SOL on &quot;{market.outcomes[outcome]}&quot;
               </p>
               {solscanUrl && (
                 <a
@@ -188,24 +187,24 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
 
               <div className="mt-4">
-                <label className="text-[0.6875rem] text-muted">Amount (USDT)</label>
+                <label className="text-[0.6875rem] text-muted">Amount (SOL)</label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
                   min="0"
-                  step="0.1"
+                  step="0.01"
                   className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 font-mono text-offwhite placeholder:text-muted/50 focus:border-amber-primary/50 focus:outline-none"
                 />
                 <div className="mt-2 flex gap-2">
-                  {[1, 5, 10, 25].map((v) => (
+                  {[0.01, 0.05, 0.1, 0.5].map((v) => (
                     <button
                       key={v}
                       onClick={() => setAmount(String(v))}
                       className="rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[0.6875rem] text-muted transition-colors hover:text-offwhite"
                     >
-                      ${v}
+                      {v} SOL
                     </button>
                   ))}
                 </div>
@@ -216,7 +215,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                   <div className="flex justify-between text-[0.75rem]">
                     <span className="text-muted">Potential payout</span>
                     <span className="font-mono text-green-400">
-                      ${potentialPayout.toFixed(2)}
+                      {potentialPayout.toFixed(4)} SOL
                     </span>
                   </div>
                   <div className="flex justify-between text-[0.75rem]">
@@ -251,11 +250,11 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                     : "Processing..."
                   : !publicKey
                   ? "Connect Wallet"
-                  : `Stake $${numAmount || "0"} USDT`}
+                  : `Stake ${numAmount || "0"} SOL`}
               </button>
 
               <p className="mt-3 text-center text-[0.625rem] text-muted">
-                On-chain settlement via TxODDS Merkle proof • Solana devnet
+                SOL wrapped and escrowed via TxLINE create_intent • Solana devnet
               </p>
             </>
           )}
