@@ -12,6 +12,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { TXLINE_PROGRAM_ID, STAKE_MINT, LAMPORTS_PER_SOL } from "./constants";
+import { lamportsToSol, parseSolToLamports } from "./format";
 
 export type StakeWallet = {
   publicKey: PublicKey;
@@ -70,8 +71,8 @@ export interface CreateIntentParams {
   fixtureId: number;
   marketType: string;
   outcome: number;
-  /** Stake amount in SOL (e.g. 0.1) */
-  amount: number;
+  /** Stake amount in SOL (e.g. 0.1) — string preferred to avoid float drift */
+  amount: string | number;
   expirationMinutes?: number;
   onPhase?: (phase: CreateIntentPhase) => void;
 }
@@ -94,10 +95,11 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
 
   onPhase?.("preparing");
 
-  const lamports = BigInt(Math.floor(amount * LAMPORTS_PER_SOL));
+  const lamports = parseSolToLamports(amount);
   if (lamports <= BigInt(0)) {
     throw new Error("Stake amount must be greater than 0");
   }
+  const solHuman = lamportsToSol(lamports);
 
   const termsHash = await computeTermsHash(fixtureId, marketType, outcome);
   const intentId = BigInt(Date.now());
@@ -169,7 +171,7 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   const feeBuffer = BigInt(10_000_000); // ~0.01 SOL for fees + rent
   if (BigInt(balance) < lamports + feeBuffer) {
     throw new Error(
-      `Insufficient SOL — need ~${amount.toFixed(3)} SOL plus ~0.01 SOL for fees`
+      `Insufficient SOL — need ~${solHuman.toFixed(4)} SOL plus ~0.01 SOL for fees`
     );
   }
 

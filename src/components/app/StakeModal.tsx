@@ -8,6 +8,7 @@ import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
 import { createIntent, type CreateIntentPhase, type StakeWallet } from "@/lib/solana/program";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
+import { formatSol } from "@/lib/solana/format";
 import type { MicroMarket } from "@/lib/markets/types";
 
 interface Props {
@@ -80,7 +81,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         fixtureId: market.fixtureId,
         marketType: market.type,
         outcome,
-        amount: numAmount,
+        amount,
         onPhase: setPhase,
       });
 
@@ -141,7 +142,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
               <h3 className="text-lg font-medium text-offwhite">Stake Confirmed On-Chain</h3>
               <p className="mt-2 text-[0.8125rem] text-muted">
-                {numAmount} SOL on &quot;{market.outcomes[outcome]}&quot;
+                {formatSol(numAmount)} on &quot;{market.outcomes[outcome]}&quot;
               </p>
               {solscanUrl && (
                 <a
@@ -222,7 +223,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                   <div className="flex justify-between text-[0.75rem]">
                     <span className="text-muted">Potential payout</span>
                     <span className="font-mono text-green-400">
-                      {potentialPayout.toFixed(4)} SOL
+                      {formatSol(potentialPayout)}
                     </span>
                   </div>
                   <div className="flex justify-between text-[0.75rem]">
@@ -257,7 +258,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                     : "Processing..."
                   : !publicKey
                   ? "Connect Wallet"
-                  : `Stake ${numAmount || "0"} SOL`}
+                  : `Stake ${amount.trim() || "0"} SOL`}
               </button>
 
               <p className="mt-3 text-center text-[0.625rem] text-muted">

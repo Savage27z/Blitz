@@ -7,6 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useUserStore } from "@/stores/userStore";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
+import { formatSol } from "@/lib/solana/format";
 
 export default function ProfilePage() {
   const { publicKey, disconnect } = useWallet();
@@ -106,7 +107,7 @@ export default function ProfilePage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Total Staked", value: `$${totalStaked.toFixed(2)}` },
+          { label: "Total Staked", value: formatSol(totalStaked) },
           { label: "Active Positions", value: activeStakes.toString() },
           { label: "Total Trades", value: stakes.length.toString() },
         ].map((stat) => (
@@ -171,7 +172,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span className="font-mono text-[0.875rem] font-semibold text-offwhite">
-                    ${stake.amount.toFixed(2)}
+                    {formatSol(stake.amount)}
                   </span>
                   <a
                     href={`${SOLSCAN_BASE}/${stake.txHash}${SOLSCAN_CLUSTER_PARAM}`}
