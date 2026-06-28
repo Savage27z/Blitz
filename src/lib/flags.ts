@@ -45,6 +45,7 @@ const COUNTRY_CODES: Record<string, string> = {
   "South Africa": "za",
   "South Korea": "kr",
   Spain: "es",
+  Sweden: "se",
   Switzerland: "ch",
   Tunisia: "tn",
   Turkey: "tr",
