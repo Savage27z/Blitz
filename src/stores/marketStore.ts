@@ -20,6 +20,8 @@ interface MarketStoreState {
   activeMarkets: MicroMarket[];
   settledMarkets: MicroMarket[];
   connected: boolean;
+  lastEventSeq: number;
+  lastEventTime: number;
   matchStats: MatchStats;
 
   setFixtureInfo: (id: number, t1: string, t2: string) => void;
@@ -44,6 +46,8 @@ export const useMarketStore = create<MarketStoreState>((set) => ({
   activeMarkets: [],
   settledMarkets: [],
   connected: false,
+  lastEventSeq: 0,
+  lastEventTime: 0,
   matchStats: {
     possession: 50,
     shotsOnTarget: [0, 0],

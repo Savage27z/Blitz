@@ -71,6 +71,8 @@ export default function MatchPage() {
       activeMarkets: [],
       settledMarkets: [],
       connected: false,
+      lastEventSeq: 0,
+      lastEventTime: 0,
       matchStats: {
         possession: 50,
         shotsOnTarget: [0, 0],

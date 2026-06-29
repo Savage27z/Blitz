@@ -19,8 +19,11 @@ export function resetEngine() {
 }
 
 function canGenerate(type: MarketType): boolean {
+  const now = Date.now();
   const last = engineState.lastMarketTime[type] || 0;
-  return Date.now() - last > COOLDOWN_MS;
+  if (now - last <= COOLDOWN_MS) return false;
+  engineState.lastMarketTime[type] = now;
+  return true;
 }
 
 function buildMarket(
@@ -32,7 +35,6 @@ function buildMarket(
   durationMs: number = MARKET_DURATION_MS,
 ): MicroMarket {
   const now = Date.now();
-  engineState.lastMarketTime[type] = now;
   engineState.totalMarketsGenerated++;
 
   return {

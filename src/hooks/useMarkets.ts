@@ -15,8 +15,6 @@ export function useMarkets() {
   const score = useMarketStore((s) => s.score);
   const team1Name = useMarketStore((s) => s.team1Name);
   const team2Name = useMarketStore((s) => s.team2Name);
-  const activeMarkets = useMarketStore((s) => s.activeMarkets);
-  const matchMinute = useMarketStore((s) => s.matchMinute);
   const addMarket = useMarketStore((s) => s.addMarket);
   const settleMarket = useMarketStore((s) => s.settleMarket);
   const lockMarket = useMarketStore((s) => s.lockMarket);
@@ -25,10 +23,12 @@ export function useMarkets() {
   const updateStakesForMarket = useUserStore((s) => s.updateStakesForMarket);
 
   const processedEventsRef = useRef<Set<string>>(new Set());
+  const settledMarketsRef = useRef<Set<string>>(new Set());
   const sessionStartRef = useRef(Date.now());
 
   useEffect(() => {
     processedEventsRef.current.clear();
+    settledMarketsRef.current.clear();
     sessionStartRef.current = Date.now();
   }, [fixtureId]);
 
@@ -38,7 +38,6 @@ export function useMarkets() {
     const latest = events[0];
     if (processedEventsRef.current.has(latest.id)) return;
 
-    // Skip stale snapshot events — only generate markets for fresh stream/demo events
     const isDemo = latest.id.startsWith("demo-");
     const isFresh = latest.timestamp >= sessionStartRef.current - 15_000;
     if (!isDemo && !isFresh) {
@@ -67,18 +66,22 @@ export function useMarkets() {
     const interval = setInterval(() => {
       const now = Date.now();
       const wallet = publicKey?.toBase58();
-      const markets = useMarketStore.getState().activeMarkets;
-      const currentEvents = useMarketStore.getState().events;
-      const currentScore = useMarketStore.getState().score;
-      const currentMinute = useMarketStore.getState().matchMinute;
+      const state = useMarketStore.getState();
+      const markets = state.activeMarkets;
+      const currentEvents = state.events;
+      const currentScore = state.score;
+      const currentMinute = state.matchMinute;
 
       markets.forEach((market) => {
+        if (settledMarketsRef.current.has(market.id)) return;
+
         if (market.status === "open" && market.expiresAt - now < 30_000) {
           lockMarket(market.id);
         }
 
         const resolution = checkResolution(market, currentEvents, currentScore, currentMinute);
         if (resolution?.resolved) {
+          settledMarketsRef.current.add(market.id);
           settleMarket(market.id, resolution.result);
           const label = resolution.result === null
             ? "Void — Push"

@@ -9,20 +9,26 @@ import {
   mapRawFixture,
   normalizeFixturesPayload,
 } from "@/lib/txodds/fixtures";
-import { goalsFromRaw, extractScoreStatusFromEvents } from "@/lib/txodds/scores";
 
 export type { FixtureFilter };
 export { getFixtureCategory, isFixtureLive };
 
 const ARCHIVE_KEY = "blitz-fixtures-archive";
 
+function isValidFixture(f: unknown): f is Fixture {
+  if (!f || typeof f !== "object") return false;
+  const o = f as Record<string, unknown>;
+  return typeof o.fixtureId === "number" && typeof o.startTime === "number" && typeof o.participant1Name === "string";
+}
+
 function loadArchive(): Fixture[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(ARCHIVE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as Fixture[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidFixture);
   } catch {
     return [];
   }

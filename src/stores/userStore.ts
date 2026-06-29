@@ -25,10 +25,18 @@ interface UserStoreState {
 
 const STORAGE_KEY = "blitz_user_stakes";
 
+function isValidStake(s: unknown): s is UserStake {
+  if (!s || typeof s !== "object") return false;
+  const o = s as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.wallet === "string" && typeof o.marketId === "string" && typeof o.amount === "number";
+}
+
 function readAll(): UserStake[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidStake);
   } catch {
     return [];
   }
