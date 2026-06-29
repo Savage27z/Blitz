@@ -10,6 +10,8 @@ export { LIVE_STATES, COMPLETED_STATES };
 
 /** Regulation + stoppage + brief post-whistle buffer when API has no status */
 const MATCH_DURATION_MS = 120 * 60 * 1000;
+/** If API still reports a live status after this long, the status is stale */
+const STALE_LIVE_THRESHOLD_MS = 180 * 60 * 1000;
 
 export function normalizeFixturesPayload(data: unknown): any[] {
   if (Array.isArray(data)) return data;
@@ -40,8 +42,13 @@ export function mapRawFixture(f: any): Fixture {
 export function getFixtureCategory(fixture: Fixture, now = Date.now()): FixtureFilter {
   const status = fixture.statusId || "NS";
 
-  if (LIVE_STATES.includes(status)) return "live";
   if (COMPLETED_STATES.includes(status)) return "completed";
+
+  if (LIVE_STATES.includes(status)) {
+    const start = fixture.startTime;
+    if (start && !isNaN(start) && now - start > STALE_LIVE_THRESHOLD_MS) return "completed";
+    return "live";
+  }
 
   const start = fixture.startTime;
   if (!start || isNaN(start)) return "upcoming";

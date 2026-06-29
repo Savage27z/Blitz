@@ -8,9 +8,12 @@ import Flag from "@/components/app/Flag";
 
 function getMinuteDisplay(fixture: Fixture): string | null {
   const s = fixture.statusId || "NS";
-  if (s === "H1") return "~25'";
-  if (s === "H2") return "~65'";
   if (s === "HT") return "HT";
+  if ((s === "H1" || s === "H2") && fixture.startTime) {
+    const elapsed = Math.floor((Date.now() - fixture.startTime) / 60_000);
+    const clamped = Math.max(1, Math.min(elapsed, s === "H1" ? 45 : 90));
+    return `${clamped}'`;
+  }
   return null;
 }
 
@@ -20,8 +23,8 @@ function getStatusLabel(fixture: Fixture): string {
   const category = getFixtureCategory(fixture);
   const s = fixture.statusId || "NS";
 
+  if (category === "completed") return "Full Time";
   if (category === "live" && s === "NS") return "Live";
-  if (category === "completed" && s === "NS") return "Full Time";
 
   if (s === "NS") {
     const d = new Date(fixture.startTime);
@@ -37,7 +40,6 @@ function getStatusLabel(fixture: Fixture): string {
   if (s === "HT") return "Half Time";
   if (s === "H1") return "1st Half";
   if (s === "H2") return "2nd Half";
-  if (s === "F" || s === "FET" || s === "FPE") return "Full Time";
   return s;
 }
 
@@ -48,7 +50,7 @@ export default memo(function MatchCard({ fixture }: { fixture: Fixture }) {
   const isUpcoming = category === "upcoming";
   const p1Goals = fixture.score?.Participant1?.Total?.Goals ?? (isUpcoming ? "" : "0");
   const p2Goals = fixture.score?.Participant2?.Total?.Goals ?? (isUpcoming ? "" : "0");
-  const minute = getMinuteDisplay(fixture);
+  const minute = isLive ? getMinuteDisplay(fixture) : null;
 
   return (
     <Link
