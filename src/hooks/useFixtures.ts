@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Fixture } from "@/lib/txodds/types";
+import type { Fixture, SoccerScore } from "@/lib/txodds/types";
 import {
   type FixtureFilter,
   getFixtureCategory,
@@ -9,6 +9,7 @@ import {
   mapRawFixture,
   normalizeFixturesPayload,
 } from "@/lib/txodds/fixtures";
+import { goalsFromRaw, extractScoreStatusFromEvents } from "@/lib/txodds/scores";
 
 export type { FixtureFilter };
 export { getFixtureCategory, isFixtureLive };
@@ -43,6 +44,51 @@ function mergeWithArchive(incoming: Fixture[]): Fixture[] {
   return Array.from(byId.values());
 }
 
+async function refreshScoresFromSnapshot(fixtures: Fixture[]): Promise<Fixture[]> {
+  const now = Date.now();
+  const needsRefresh = fixtures.filter((f) => {
+    const cat = getFixtureCategory(f, now);
+    if (cat === "live") return true;
+    if (cat === "completed" && f.startTime && now - f.startTime < 6 * 60 * 60 * 1000) return true;
+    return false;
+  });
+
+  if (needsRefresh.length === 0) return fixtures;
+
+  const updates = new Map<number, SoccerScore>();
+
+  await Promise.allSettled(
+    needsRefresh.map(async (f) => {
+      try {
+        const res = await fetch(`/api/proxy/scores-snapshot/${f.fixtureId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const events = await res.json();
+        if (!Array.isArray(events) || events.length === 0) return;
+
+        const latest = events.reduce((best: Record<string, unknown>, e: Record<string, unknown>) => {
+          const seq = Number(e.Seq ?? e.seq ?? 0);
+          const bestSeq = Number(best.Seq ?? best.seq ?? 0);
+          return seq >= bestSeq ? e : best;
+        }, events[0]);
+
+        const score = (latest.Score ?? latest.score ?? latest.ScoreSoccer ?? latest.scoreSoccer) as SoccerScore | undefined;
+        if (score?.Participant1?.Total && score?.Participant2?.Total) {
+          updates.set(f.fixtureId, score);
+        }
+      } catch {
+        // keep existing score
+      }
+    })
+  );
+
+  if (updates.size === 0) return fixtures;
+
+  return fixtures.map((f) => {
+    const freshScore = updates.get(f.fixtureId);
+    return freshScore ? { ...f, score: freshScore } : f;
+  });
+}
+
 export function useFixtures() {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,8 +104,10 @@ export function useFixtures() {
       const data = await res.json();
       const list = normalizeFixturesPayload(data).map(mapRawFixture);
       const merged = mergeWithArchive(list);
-      saveArchive(merged);
-      setFixtures(merged);
+
+      const withFreshScores = await refreshScoresFromSnapshot(merged);
+      saveArchive(withFreshScores);
+      setFixtures(withFreshScores);
       setError(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to fetch fixtures");
@@ -74,7 +122,6 @@ export function useFixtures() {
     return () => clearInterval(interval);
   }, [fetchFixtures]);
 
-  // Re-evaluate live/completed buckets every minute without waiting for API poll
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(tick);
