@@ -7,12 +7,16 @@ import {
 } from "@solana/web3.js";
 import {
   createAssociatedTokenAccountInstruction,
-  createSyncNativeInstruction,
   getAssociatedTokenAddressSync,
+  getAccount,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { TXLINE_PROGRAM_ID, STAKE_MINT, LAMPORTS_PER_SOL } from "./constants";
-import { lamportsToSol, parseSolToLamports } from "./format";
+import {
+  TXLINE_PROGRAM_ID,
+  USDT_MINT,
+  MIN_STAKE_USDT_MICRO,
+} from "./constants";
+import { microUsdtToUsdt, parseUsdtToMicro } from "./format";
 
 export type StakeWallet = {
   publicKey: PublicKey;
@@ -32,6 +36,23 @@ async function withTimeout<T>(
       setTimeout(() => reject(new Error(`${label} timed out — try again`)), ms)
     ),
   ]);
+}
+
+function parseTxError(err: unknown): string {
+  if (err instanceof Error) {
+    const msg = err.message;
+    if (msg.includes("InvalidMint")) {
+      return "TxLINE only accepts devnet USDT for stakes — not SOL/WSOL";
+    }
+    if (msg.includes("InsufficientFunds") || msg.includes("insufficient")) {
+      return "Insufficient devnet USDT in wallet (need ≥1 USDT + SOL for fees)";
+    }
+    if (msg.includes("Funds below minimal")) {
+      return "Minimum stake is 1 USDT on TxLINE devnet";
+    }
+    return msg;
+  }
+  return "Transaction failed";
 }
 
 /**
@@ -71,15 +92,15 @@ export interface CreateIntentParams {
   fixtureId: number;
   marketType: string;
   outcome: number;
-  /** Stake amount in SOL (e.g. 0.1) — string preferred to avoid float drift */
+  /** Stake amount in USDT (e.g. 1 or 0.5) */
   amount: string | number;
   expirationMinutes?: number;
   onPhase?: (phase: CreateIntentPhase) => void;
 }
 
 /**
- * Stake SOL on-chain via TxLINE create_intent.
- * Native SOL is wrapped to WSOL in the same transaction before escrow.
+ * Stake devnet USDT on-chain via TxLINE create_intent.
+ * The program hardcodes USDT_MINT — WSOL/SOL will fail with InvalidMint.
  */
 export async function createIntent(params: CreateIntentParams): Promise<string> {
   const {
@@ -95,11 +116,15 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
 
   onPhase?.("preparing");
 
-  const lamports = parseSolToLamports(amount);
-  if (lamports <= BigInt(0)) {
+  const depositMicro = parseUsdtToMicro(amount);
+  if (depositMicro <= BigInt(0)) {
     throw new Error("Stake amount must be greater than 0");
   }
-  const solHuman = lamportsToSol(lamports);
+  if (depositMicro < MIN_STAKE_USDT_MICRO) {
+    throw new Error("Minimum stake is 1 USDT on TxLINE devnet");
+  }
+
+  const usdtHuman = microUsdtToUsdt(depositMicro);
 
   const termsHash = await computeTermsHash(fixtureId, marketType, outcome);
   const intentId = BigInt(Date.now());
@@ -108,7 +133,7 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   const [intentVault] = deriveIntentVaultPda(orderIntentPda);
 
   const makerTokenAccount = getAssociatedTokenAddressSync(
-    STAKE_MINT,
+    USDT_MINT,
     wallet.publicKey,
     false,
     TOKEN_PROGRAM_ID
@@ -123,7 +148,7 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   intentIdBuf.writeBigUInt64LE(intentId);
 
   const depositBuf = Buffer.alloc(8);
-  depositBuf.writeBigUInt64LE(lamports);
+  depositBuf.writeBigUInt64LE(depositMicro);
 
   const expirationBuf = Buffer.alloc(8);
   expirationBuf.writeBigInt64LE(expirationTs);
@@ -151,14 +176,14 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
       { pubkey: orderIntentPda, isSigner: false, isWritable: true },
       { pubkey: intentVault, isSigner: false, isWritable: true },
       { pubkey: makerTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: STAKE_MINT, isSigner: false, isWritable: false },
+      { pubkey: USDT_MINT, isSigner: false, isWritable: false },
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data,
   };
 
-  const [blockhashResult, ataInfo, balance] = await withTimeout(
+  const [blockhashResult, ataInfo, solBalance] = await withTimeout(
     Promise.all([
       connection.getLatestBlockhash("confirmed"),
       connection.getAccountInfo(makerTokenAccount, "confirmed"),
@@ -168,11 +193,26 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
     "RPC request"
   );
 
-  const feeBuffer = BigInt(10_000_000); // ~0.01 SOL for fees + rent
-  if (BigInt(balance) < lamports + feeBuffer) {
-    throw new Error(
-      `Insufficient SOL — need ~${solHuman.toFixed(4)} SOL plus ~0.01 SOL for fees`
-    );
+  if (BigInt(solBalance) < BigInt(5_000_000)) {
+    throw new Error("Insufficient SOL for transaction fees — airdrop devnet SOL first");
+  }
+
+  if (ataInfo) {
+    try {
+      const tokenAccount = await getAccount(connection, makerTokenAccount);
+      if (tokenAccount.amount < depositMicro) {
+        throw new Error(
+          `Insufficient devnet USDT — need ${usdtHuman.toFixed(2)} USDT, have ${microUsdtToUsdt(tokenAccount.amount).toFixed(2)} USDT`
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Insufficient devnet USDT")) {
+        throw err;
+      }
+      throw new Error(
+        `No devnet USDT token account — fund wallet with devnet USDT before staking`
+      );
+    }
   }
 
   const { blockhash, lastValidBlockHeight } = blockhashResult;
@@ -184,32 +224,29 @@ export async function createIntent(params: CreateIntentParams): Promise<string> 
   });
 
   if (!ataInfo) {
-    tx.add(
-      createAssociatedTokenAccountInstruction(
-        wallet.publicKey,
-        makerTokenAccount,
-        wallet.publicKey,
-        STAKE_MINT
-      )
+    throw new Error(
+      "No devnet USDT in wallet — get devnet USDT from a faucet or swap before staking"
     );
   }
 
-  tx.add(
-    SystemProgram.transfer({
-      fromPubkey: wallet.publicKey,
-      toPubkey: makerTokenAccount,
-      lamports: Number(lamports),
-    }),
-    createSyncNativeInstruction(makerTokenAccount),
-    instruction
-  );
+  tx.add(instruction);
 
   onPhase?.("signing");
   const signedTx = await wallet.signTransaction(tx);
 
   onPhase?.("sending");
+  try {
+    const simulation = await connection.simulateTransaction(signedTx);
+    if (simulation.value.err) {
+      throw new Error(parseTxError(new Error(JSON.stringify(simulation.value.err))));
+    }
+  } catch (err) {
+    throw new Error(parseTxError(err));
+  }
+
   const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-    skipPreflight: true,
+    skipPreflight: false,
+    preflightCommitment: "confirmed",
     maxRetries: 3,
   });
 

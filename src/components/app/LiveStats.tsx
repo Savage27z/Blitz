@@ -8,9 +8,10 @@ interface StatBarProps {
   label: string;
   left: number;
   right: number;
+  suffix?: string;
 }
 
-function StatBar({ label, left, right }: StatBarProps) {
+function StatBar({ label, left, right, suffix = "" }: StatBarProps) {
   const total = left + right || 1;
   const leftPct = (left / total) * 100;
   const rightPct = (right / total) * 100;
@@ -18,9 +19,17 @@ function StatBar({ label, left, right }: StatBarProps) {
   return (
     <div className="group">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">{left}</span>
-        <span className="text-[0.6rem] font-medium uppercase tracking-widest text-white/30 transition-colors group-hover:text-white/50">{label}</span>
-        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">{right}</span>
+        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">
+          {left}
+          {suffix}
+        </span>
+        <span className="text-[0.6rem] font-medium uppercase tracking-widest text-white/30 transition-colors group-hover:text-white/50">
+          {label}
+        </span>
+        <span className="font-mono text-[0.75rem] font-medium tabular-nums text-offwhite">
+          {right}
+          {suffix}
+        </span>
       </div>
       <div className="flex h-1 gap-0.5 overflow-hidden rounded-full">
         <motion.div
@@ -45,19 +54,18 @@ export default function LiveStats() {
 
   const hasData = events.length > 0 || ["H1", "HT", "H2", "ET1", "ET2", "PE", "HTET"].includes(gamePhase);
 
-  const t1Corners = events.filter((e) => e.type === "corner" && e.team === 1).length;
-  const t2Corners = events.filter((e) => e.type === "corner" && e.team === 2).length;
-  const t1Cards = events.filter((e) => (e.type === "yellow_card" || e.type === "red_card") && e.team === 1).length;
-  const t2Cards = events.filter((e) => (e.type === "yellow_card" || e.type === "red_card") && e.team === 2).length;
   const t1Dangers = events.filter((e) => e.type === "danger" && e.team === 1).length;
   const t2Dangers = events.filter((e) => e.type === "danger" && e.team === 2).length;
 
-  const possession = matchStats.possession;
-  const t1Possession = Math.round(possession);
+  const t1Possession = Math.round(matchStats.possession);
   const t2Possession = 100 - t1Possession;
 
-  const t1Shots = matchStats.shotsOnTarget[0] || t1Dangers;
-  const t2Shots = matchStats.shotsOnTarget[1] || t2Dangers;
+  const t1Shots = matchStats.shotsOnTarget[0];
+  const t2Shots = matchStats.shotsOnTarget[1];
+  const t1Corners = matchStats.corners[0];
+  const t2Corners = matchStats.corners[1];
+  const t1Cards = matchStats.cards[0];
+  const t2Cards = matchStats.cards[1];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.03] to-transparent shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
@@ -87,7 +95,7 @@ export default function LiveStats() {
           </div>
         ) : (
           <div className="space-y-4">
-            <StatBar label="Possession" left={t1Possession} right={t2Possession} />
+            <StatBar label="Possession" left={t1Possession} right={t2Possession} suffix="%" />
             <StatBar label="Shots on Target" left={t1Shots} right={t2Shots} />
             <StatBar label="Corners" left={t1Corners} right={t2Corners} />
             <StatBar label="Cards" left={t1Cards} right={t2Cards} />

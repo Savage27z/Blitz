@@ -6,17 +6,18 @@ export const TXLINE_PROGRAM_ID = new PublicKey(
     : "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J"
 );
 
-/** Wrapped SOL — used for on-chain stakes via create_intent */
-export const STAKE_MINT = new PublicKey(
-  "So11111111111111111111111111111111111111112"
-);
-
-/** @deprecated USDT create_intent path — stakes now use wrapped SOL */
+/** Devnet USDT — required by TxLINE create_intent (program validates this mint). */
 export const USDT_MINT = new PublicKey(
   process.env.NEXT_PUBLIC_SOLANA_NETWORK === "mainnet-beta"
     ? "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
     : "ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh"
 );
+
+/** @deprecated TxLINE create_intent does not accept WSOL — use USDT_MINT */
+export const STAKE_MINT = USDT_MINT;
+
+export const USDT_DECIMALS = 6;
+export const MIN_STAKE_USDT_MICRO = 1_000_000n; // 1 USDT minimum per TxLINE program
 
 export const LAMPORTS_PER_SOL = 1_000_000_000;
 

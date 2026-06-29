@@ -71,8 +71,8 @@ async function applySnapshot(
     LIVE_STATES.includes(store.gamePhase) ||
     (startTime != null && startTime <= now && startTime + 120 * 60 * 1000 > now);
 
-  const { possession, shotsOnTarget } = extractStats(latest);
-  useMarketStore.getState().updateMatchStats({ possession, shotsOnTarget });
+  const { possession, shotsOnTarget, corners, cards } = extractStats(latest, events);
+  useMarketStore.getState().updateMatchStats({ possession, shotsOnTarget, corners, cards });
 
   if (isLive && store.connected && store.events.length > 0) {
     updateMatchState(phase, minute, goals);

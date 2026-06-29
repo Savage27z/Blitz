@@ -8,7 +8,7 @@ import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
 import { createIntent, type CreateIntentPhase, type StakeWallet } from "@/lib/solana/program";
 import { SOLSCAN_BASE, SOLSCAN_CLUSTER_PARAM } from "@/lib/solana/constants";
-import { formatSol } from "@/lib/solana/format";
+import { formatUsdt } from "@/lib/solana/format";
 import type { MicroMarket } from "@/lib/markets/types";
 
 interface Props {
@@ -31,12 +31,19 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const { setVisible } = useWalletModal();
 
   const numAmount = parseFloat(amount) || 0;
+  const sideTotal = market.totalStaked[outcome] + numAmount;
+  const otherSideTotal = market.totalStaked[outcome === 0 ? 1 : 0];
   const totalPool = market.totalStaked[0] + market.totalStaked[1] + numAmount;
-  const yourShare = totalPool > 0 ? numAmount / (market.totalStaked[outcome] + numAmount) : 0;
-  const potentialPayout = yourShare * totalPool;
+  const shareOfSide = sideTotal > 0 ? numAmount / sideTotal : 0;
+  const shareOfPool = totalPool > 0 ? numAmount / totalPool : 0;
+  const potentialPayout = shareOfSide * totalPool;
 
   const handleStake = async () => {
     if (numAmount <= 0) return;
+    if (numAmount < 1) {
+      setError("Minimum stake is 1 USDT on TxLINE devnet");
+      return;
+    }
 
     setError(null);
 
@@ -142,7 +149,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
               <h3 className="text-lg font-medium text-offwhite">Stake Confirmed On-Chain</h3>
               <p className="mt-2 text-[0.8125rem] text-muted">
-                {formatSol(numAmount)} on &quot;{market.outcomes[outcome]}&quot;
+                {formatUsdt(numAmount)} on &quot;{market.outcomes[outcome]}&quot;
               </p>
               {solscanUrl && (
                 <a
@@ -195,24 +202,24 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
 
               <div className="mt-4">
-                <label className="text-[0.6875rem] text-muted">Amount (SOL)</label>
+                <label className="text-[0.6875rem] text-muted">Amount (USDT)</label>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
+                  placeholder="1.00"
+                  min="1"
                   step="0.01"
                   className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 font-mono text-offwhite placeholder:text-muted/50 focus:border-amber-primary/50 focus:outline-none"
                 />
                 <div className="mt-2 flex gap-2">
-                  {[0.01, 0.05, 0.1, 0.5].map((v) => (
+                  {[1, 2, 5, 10].map((v) => (
                     <button
                       key={v}
                       onClick={() => setAmount(String(v))}
                       className="rounded-md border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[0.6875rem] text-muted transition-colors hover:text-offwhite"
                     >
-                      {v} SOL
+                      {v} USDT
                     </button>
                   ))}
                 </div>
@@ -221,17 +228,28 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               {numAmount > 0 && (
                 <div className="mt-4 space-y-2 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-3">
                   <div className="flex justify-between text-[0.75rem]">
-                    <span className="text-muted">Potential payout</span>
+                    <span className="text-muted">Potential payout (if you win)</span>
                     <span className="font-mono text-green-400">
-                      {formatSol(potentialPayout)}
+                      {formatUsdt(potentialPayout)}
                     </span>
                   </div>
                   <div className="flex justify-between text-[0.75rem]">
-                    <span className="text-muted">Your share of pool</span>
+                    <span className="text-muted">Share of this outcome</span>
                     <span className="font-mono text-offwhite">
-                      {(yourShare * 100).toFixed(1)}%
+                      {(shareOfSide * 100).toFixed(1)}%
                     </span>
                   </div>
+                  <div className="flex justify-between text-[0.75rem]">
+                    <span className="text-muted">Share of total pool</span>
+                    <span className="font-mono text-offwhite">
+                      {(shareOfPool * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  {otherSideTotal === 0 && (
+                    <p className="text-[0.625rem] text-muted">
+                      No opposing stakes yet — payout grows when others bet the other side.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -249,7 +267,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
 
               <button
                 onClick={handleStake}
-                disabled={numAmount <= 0 || submitting}
+                disabled={numAmount < 1 || submitting}
                 className="mt-5 w-full rounded-xl bg-amber-primary py-3.5 text-[0.875rem] font-semibold text-warm-dark transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting
@@ -258,11 +276,11 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                     : "Processing..."
                   : !publicKey
                   ? "Connect Wallet"
-                  : `Stake ${amount.trim() || "0"} SOL`}
+                  : `Stake ${amount.trim() || "0"} USDT`}
               </button>
 
               <p className="mt-3 text-center text-[0.625rem] text-muted">
-                SOL wrapped and escrowed via TxLINE create_intent • Solana devnet
+                TxLINE create_intent escrows devnet USDT • min 1 USDT • Solana devnet
               </p>
             </>
           )}

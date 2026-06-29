@@ -1,5 +1,6 @@
 import type { GameState, SoccerScore, SoccerScoreEvent } from "@/lib/txodds/types";
 import type { MatchEvent } from "@/lib/markets/types";
+import { STAT_KEYS } from "@/lib/txodds/constants";
 
 /** Numeric soccer phase IDs from TxODDS scores feed (Type: "Soccer"). */
 const SOCCER_STATUS_BY_ID: Record<number, GameState> = {
@@ -234,19 +235,94 @@ export function extractScoreStatusFromEvents(events: Record<string, unknown>[]):
   return { statusId, score, minute };
 }
 
-export function extractStats(raw: Record<string, unknown>) {
-  const stats = (raw.Stats ?? raw.stats) as Record<string, number> | undefined;
-  const p1Shots = stats?.["1001"] ?? stats?.["1007"] ?? 0;
-  const p2Shots = stats?.["2001"] ?? stats?.["2007"] ?? 0;
-  const possession =
-    typeof raw.Possession === "number"
-      ? raw.Possession
-      : typeof raw.possession === "number"
-        ? raw.possession
-        : 50;
+export function statValue(stats: Record<string, number> | undefined, key: number): number {
+  if (!stats) return 0;
+  return stats[String(key)] ?? stats[key] ?? 0;
+}
 
-  return {
-    possession: possession === 1 ? 55 : possession === 2 ? 45 : 50,
-    shotsOnTarget: [p1Shots, p2Shots] as [number, number],
-  };
+function cornersFromScore(score?: SoccerScore): [number, number] {
+  return [
+    score?.Participant1?.Total?.Corners ?? 0,
+    score?.Participant2?.Total?.Corners ?? 0,
+  ];
+}
+
+function cardsFromStats(stats?: Record<string, number>): [number, number] {
+  return [
+    statValue(stats, STAT_KEYS.P1_YELLOW) + statValue(stats, STAT_KEYS.P1_RED),
+    statValue(stats, STAT_KEYS.P2_YELLOW) + statValue(stats, STAT_KEYS.P2_RED),
+  ];
+}
+
+function countShotsOnTarget(events: Record<string, unknown>[], p1Id: number): [number, number] {
+  let p1 = 0;
+  let p2 = 0;
+
+  for (const raw of events) {
+    const action = String(raw.Action ?? raw.action ?? "");
+    if (action !== "shot") continue;
+
+    const data = readData(raw) as Record<string, unknown> | undefined;
+    const outcome = String(data?.Outcome ?? data?.outcome ?? "");
+    if (outcome === "Blocked" || outcome === "OffTarget" || outcome === "Missed") continue;
+
+    const participant = (data?.Participant ?? raw.Participant ?? raw.participant) as number | undefined;
+    if (participant === p1Id) p1++;
+    else p2++;
+  }
+
+  return [p1, p2];
+}
+
+function possessionPctFromEvents(events: Record<string, unknown>[], p1Id: number): number {
+  let p1 = 0;
+  let p2 = 0;
+
+  for (const raw of events) {
+    const action = String(raw.Action ?? raw.action ?? "");
+    if (
+      !action.includes("possession") &&
+      action !== "possession" &&
+      action !== "attack_possession"
+    ) {
+      continue;
+    }
+
+    const participant = (raw.Participant ?? raw.participant) as number | undefined;
+    if (participant === p1Id) p1++;
+    else if (participant != null) p2++;
+  }
+
+  const total = p1 + p2;
+  if (total === 0) return 50;
+  return Math.round((p1 / total) * 100);
+}
+
+export function extractStats(
+  raw: Record<string, unknown>,
+  events: Record<string, unknown>[] = []
+) {
+  const stats = (raw.Stats ?? raw.stats) as Record<string, number> | undefined;
+  const score = readScore(raw);
+  const p1Id = (raw.Participant1Id ?? raw.participant1Id) as number | undefined;
+
+  const cornersFromStats: [number, number] = [
+    statValue(stats, STAT_KEYS.P1_CORNERS),
+    statValue(stats, STAT_KEYS.P2_CORNERS),
+  ];
+  const cornersFromScore = cornersFromScore(score);
+  const corners: [number, number] = [
+    Math.max(cornersFromStats[0], cornersFromScore[0]),
+    Math.max(cornersFromStats[1], cornersFromScore[1]),
+  ];
+
+  const cards = cardsFromStats(stats);
+  const shotsOnTarget =
+    p1Id != null ? countShotsOnTarget(events, p1Id) : ([0, 0] as [number, number]);
+  const possession =
+    p1Id != null && events.length > 0
+      ? possessionPctFromEvents(events, p1Id)
+      : 50;
+
+  return { possession, shotsOnTarget, corners, cards };
 }

@@ -24,7 +24,7 @@ function applyScorePayload(raw: Record<string, unknown>, fixtureId: number) {
   const score = goalsFromRaw(raw, normalized.scoreSoccer);
 
   updateMatchState(phase as GameState, minute, score);
-  updateMatchStats(extractStats(raw));
+  updateMatchStats(extractStats(raw, [raw]));
 
   const matchEvent = parseMatchEventFromRaw(raw);
   if (matchEvent) addEvent(matchEvent);
