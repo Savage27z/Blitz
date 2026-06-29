@@ -310,10 +310,10 @@ export function extractStats(
     statValue(stats, STAT_KEYS.P1_CORNERS),
     statValue(stats, STAT_KEYS.P2_CORNERS),
   ];
-  const cornersFromScore = cornersFromScore(score);
+  const cornerData = cornersFromScore(score);
   const corners: [number, number] = [
-    Math.max(cornersFromStats[0], cornersFromScore[0]),
-    Math.max(cornersFromStats[1], cornersFromScore[1]),
+    Math.max(cornersFromStats[0], cornerData[0]),
+    Math.max(cornersFromStats[1], cornerData[1]),
   ];
 
   const cards = cardsFromStats(stats);
