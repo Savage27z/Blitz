@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { USDT_MINT } from "@/lib/solana/constants";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
@@ -29,6 +31,15 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
   const { publicKey, wallet, signTransaction, connect } = useWallet();
   const { connection } = useConnection();
   const { setVisible } = useWalletModal();
+  const [usdtBalance, setUsdtBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!publicKey) { setUsdtBalance(null); return; }
+    const ata = getAssociatedTokenAddressSync(USDT_MINT, publicKey);
+    connection.getTokenAccountBalance(ata)
+      .then((res) => setUsdtBalance(Number(res.value.uiAmount)))
+      .catch(() => setUsdtBalance(null));
+  }, [publicKey, connection]);
 
   const numAmount = parseFloat(amount) || 0;
   const sideTotal = market.totalStaked[outcome] + numAmount;
@@ -107,18 +118,19 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         status: "active",
       });
       setTxHash(signature);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Stake error:", err);
-      setError(err?.message || "Transaction failed");
+      setError(err instanceof Error ? err.message : "Transaction failed");
     } finally {
       setSubmitting(false);
       setPhase(null);
     }
   };
 
+  const walletName = wallet?.adapter.name ?? "wallet";
   const phaseLabel: Record<CreateIntentPhase, string> = {
     preparing: "Preparing transaction...",
-    signing: "Approve in Phantom →",
+    signing: `Approve in ${walletName} →`,
     sending: "Sending to Solana...",
     confirming: "Confirming on-chain...",
   };
@@ -132,7 +144,7 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={submitting ? undefined : onClose}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -202,7 +214,14 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
               </div>
 
               <div className="mt-4">
-                <label className="text-[0.6875rem] text-muted">Amount (USDT)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[0.6875rem] text-muted">Amount (USDT)</label>
+                  {usdtBalance !== null && (
+                    <span className="text-[0.6875rem] text-muted">
+                      Balance: <span className="font-mono text-offwhite">{usdtBalance.toFixed(2)}</span>
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
                   value={amount}
@@ -222,6 +241,14 @@ export default function StakeModal({ market, outcome, onClose }: Props) {
                       {v} USDT
                     </button>
                   ))}
+                  {usdtBalance !== null && usdtBalance >= 1 && (
+                    <button
+                      onClick={() => setAmount(String(Math.floor(usdtBalance)))}
+                      className="rounded-md border border-amber-primary/30 bg-amber-primary/[0.06] px-3 py-1 text-[0.6875rem] text-amber-primary transition-colors hover:bg-amber-primary/10"
+                    >
+                      MAX
+                    </button>
+                  )}
                 </div>
               </div>
 

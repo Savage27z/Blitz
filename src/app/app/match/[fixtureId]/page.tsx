@@ -79,11 +79,14 @@ export default function MatchPage() {
       },
     });
 
+    const controller = new AbortController();
+
     async function loadFixture() {
       try {
-        const res = await fetch("/api/proxy/fixtures");
-        if (!res.ok) return;
+        const res = await fetch("/api/proxy/fixtures", { signal: controller.signal });
+        if (!res.ok || controller.signal.aborted) return;
         const data = await res.json();
+        if (controller.signal.aborted) return;
         const list = normalizeFixturesPayload(data).map(mapRawFixture);
         const fixture = list.find((f) => f.fixtureId === fixtureId);
         if (fixture) {
@@ -96,13 +99,14 @@ export default function MatchPage() {
           store.updateMatchState(phase, minute, [p1, p2]);
         }
       } catch {
-        // keep placeholder
+        // keep placeholder (abort errors are expected)
       } finally {
-        setFixtureLoaded(true);
+        if (!controller.signal.aborted) setFixtureLoaded(true);
       }
     }
 
     loadFixture();
+    return () => controller.abort();
   }, [fixtureId]);
 
   useFixtureSnapshot(fixtureId, fixtureMeta?.startTime);

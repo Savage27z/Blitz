@@ -3,6 +3,7 @@ import { getValidJwt } from "@/lib/txodds/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const apiToken = process.env.TXODDS_API_TOKEN;
@@ -15,6 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   const fixtureId = req.nextUrl.searchParams.get("fixtureId");
+  if (fixtureId && !/^\d+$/.test(fixtureId)) {
+    return new Response("Invalid fixtureId", { status: 400 });
+  }
   const url = fixtureId
     ? `${base}/api/odds/stream?fixtureId=${fixtureId}`
     : `${base}/api/odds/stream`;

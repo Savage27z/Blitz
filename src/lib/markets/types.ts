@@ -22,6 +22,7 @@ export interface MicroMarket {
   triggerEvent: string;
   status: MarketStatus;
   result: 0 | 1 | null;
+  resolveTarget?: number;
   totalStaked: [number, number];
   settlementProof: string | null;
 }

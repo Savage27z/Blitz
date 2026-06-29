@@ -33,12 +33,14 @@ export default function SettledMarkets() {
                 <div className="mt-1 flex items-center gap-2">
                   <span
                     className={`rounded px-1.5 py-0.5 text-[0.625rem] font-semibold ${
-                      market.result === 0
+                      market.result === null
+                        ? "bg-yellow-500/10 text-yellow-400"
+                        : market.result === 0
                         ? "bg-green-500/10 text-green-400"
                         : "bg-red-500/10 text-red-400"
                     }`}
                   >
-                    {market.result !== null ? market.outcomes[market.result] : "N/A"}
+                    {market.result === null ? "Void — Push" : market.outcomes[market.result]}
                   </span>
                   {market.settlementProof && (
                     <a

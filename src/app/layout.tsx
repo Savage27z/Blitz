@@ -24,7 +24,26 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Blitz — Real-Time Prediction Markets",
   description:
-    "Predict the next 10 minutes, not the next 90. Real-time prediction markets that live and die during a live match.",
+    "Predict the next 10 minutes, not the next 90. Real-time prediction markets powered by Solana that live and die during a live match.",
+  icons: {
+    icon: "/favicon.svg",
+  },
+  openGraph: {
+    title: "Blitz — Real-Time Prediction Markets",
+    description:
+      "Predict the next 10 minutes, not the next 90. Micro-markets that resolve in minutes, settled on-chain via Solana.",
+    url: "https://blitz-pied.vercel.app",
+    siteName: "Blitz",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Blitz — Real-Time Prediction Markets",
+    description:
+      "Predict the next 10 minutes, not the next 90. Micro-markets settled on Solana.",
+  },
+  metadataBase: new URL("https://blitz-pied.vercel.app"),
 };
 
 export default function RootLayout({

@@ -27,8 +27,7 @@ export default function Mission() {
         <div
           className="h-full w-full bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1920&q=80')",
+            backgroundImage: "url('/mission-stadium.jpg')",
           }}
         />
       </motion.div>

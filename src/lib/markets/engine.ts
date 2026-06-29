@@ -83,16 +83,16 @@ export function generateMarketsFromEvent(
 
   if (event.type === "goal") {
     if (canGenerate("total_goals_over")) {
-      const target = totalGoals + 1;
-      markets.push(
-        buildMarket(
-          fixtureId,
-          "total_goals_over",
-          `Over ${target - 0.5} total goals by end of half?`,
-          ["Yes", "No"],
-          event.id,
-        )
+      const target = totalGoals + 0.5;
+      const m = buildMarket(
+        fixtureId,
+        "total_goals_over",
+        `Over ${target} total goals by end of half?`,
+        ["Yes", "No"],
+        event.id,
       );
+      m.resolveTarget = target;
+      markets.push(m);
     }
     if (canGenerate("both_teams_score")) {
       const both = score[0] > 0 && score[1] > 0;

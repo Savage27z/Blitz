@@ -6,6 +6,7 @@ import { useMarketStore } from "@/stores/marketStore";
 import { useUserStore } from "@/stores/userStore";
 import { generateMarketsFromEvent } from "@/lib/markets/engine";
 import { checkResolution } from "@/lib/markets/resolver";
+import { toast } from "@/components/app/Toast";
 
 export function useMarkets() {
   const fixtureId = useMarketStore((s) => s.fixtureId);
@@ -56,7 +57,10 @@ export function useMarkets() {
       team2Name,
     );
 
-    newMarkets.forEach(addMarket);
+    newMarkets.forEach((m) => {
+      addMarket(m);
+      toast(`New market: ${m.question}`, "market");
+    });
   }, [events, fixtureId, gamePhase, score, team1Name, team2Name, addMarket]);
 
   useEffect(() => {
@@ -76,6 +80,10 @@ export function useMarkets() {
         const resolution = checkResolution(market, currentEvents, currentScore, currentMinute);
         if (resolution?.resolved) {
           settleMarket(market.id, resolution.result);
+          const label = resolution.result === null
+            ? "Void — Push"
+            : market.outcomes[resolution.result];
+          toast(`Settled: ${label}`, "settle");
           if (wallet) {
             updateStakesForMarket(market.id, resolution.result, wallet);
           }

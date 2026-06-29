@@ -5,7 +5,7 @@ export function checkResolution(
   events: MatchEvent[],
   score: [number, number],
   currentMinute: number,
-): { resolved: boolean; result: 0 | 1 } | null {
+): { resolved: boolean; result: 0 | 1 | null } | null {
   const now = Date.now();
 
   if (now >= market.expiresAt) {
@@ -30,7 +30,9 @@ export function checkResolution(
       break;
     }
     case "both_teams_score": {
-      if (score[0] > 0 && score[1] > 0) {
+      const newGoals = newEvents.filter((e) => e.type === "goal");
+      const trailingTeamScored = newGoals.length > 0;
+      if (trailingTeamScored) {
         return { resolved: true, result: 0 };
       }
       break;
@@ -44,6 +46,13 @@ export function checkResolution(
       }
       break;
     }
+    case "halftime_result": {
+      const goalInWindow = newEvents.find((e) => e.type === "goal");
+      if (goalInWindow) {
+        return { resolved: true, result: 1 };
+      }
+      break;
+    }
   }
 
   return null;
@@ -54,23 +63,23 @@ function resolveOnExpiry(
   events: MatchEvent[],
   score: [number, number],
   currentMinute: number,
-): { resolved: boolean; result: 0 | 1 } {
+): { resolved: boolean; result: 0 | 1 | null } {
   const newEvents = events.filter((e) => e.timestamp > market.createdAt);
 
   switch (market.type) {
     case "next_goal": {
       const goal = newEvents.find((e) => e.type === "goal");
-      if (!goal) return { resolved: true, result: 0 };
+      if (!goal) return { resolved: true, result: null };
       return { resolved: true, result: goal.team === 1 ? 0 : 1 };
     }
     case "total_goals_over": {
       const totalGoals = score[0] + score[1];
-      const questionMatch = market.question.match(/Over ([\d.]+)/);
-      const target = questionMatch ? parseFloat(questionMatch[1]) : 999;
+      const target = market.resolveTarget ?? 999;
       return { resolved: true, result: totalGoals > target ? 0 : 1 };
     }
     case "both_teams_score": {
-      return { resolved: true, result: score[0] > 0 && score[1] > 0 ? 0 : 1 };
+      const trailingScored = newEvents.some((e) => e.type === "goal");
+      return { resolved: true, result: trailingScored ? 0 : 1 };
     }
     case "card_before": {
       const card = newEvents.find(
@@ -78,10 +87,16 @@ function resolveOnExpiry(
       );
       return { resolved: true, result: card ? 0 : 1 };
     }
-    case "halftime_result":
-    case "next_corner":
-    case "next_goal":
+    case "halftime_result": {
+      const goalInWindow = newEvents.find((e) => e.type === "goal");
+      return { resolved: true, result: goalInWindow ? 1 : 0 };
+    }
+    case "next_corner": {
+      const corner = newEvents.find((e) => e.type === "corner");
+      if (!corner) return { resolved: true, result: null };
+      return { resolved: true, result: corner.team === 1 ? 0 : 1 };
+    }
     default:
-      return { resolved: true, result: 1 };
+      return { resolved: true, result: null };
   }
 }

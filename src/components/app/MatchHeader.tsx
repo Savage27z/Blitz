@@ -88,9 +88,15 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
         {/* Score */}
         <div className="mx-4 flex items-center gap-1">
           <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-black/40 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[0]}</span>
-            <span className="text-lg text-white/20">–</span>
-            <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[1]}</span>
+            {isLive || isCompleted ? (
+              <>
+                <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[0]}</span>
+                <span className="text-lg text-white/20">–</span>
+                <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[1]}</span>
+              </>
+            ) : (
+              <span className="font-display text-2xl text-white/40">vs</span>
+            )}
           </div>
         </div>
 

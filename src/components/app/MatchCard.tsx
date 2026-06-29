@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import type { Fixture } from "@/lib/txodds/types";
 import { getFixtureCategory } from "@/hooks/useFixtures";
@@ -40,7 +41,7 @@ function getStatusLabel(fixture: Fixture): string {
   return s;
 }
 
-export default function MatchCard({ fixture }: { fixture: Fixture }) {
+export default memo(function MatchCard({ fixture }: { fixture: Fixture }) {
   const category = getFixtureCategory(fixture);
   const isLive = category === "live";
   const isCompleted = category === "completed";
@@ -52,6 +53,7 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
   return (
     <Link
       href={`/app/match/${fixture.fixtureId}`}
+      aria-label={`${fixture.participant1Name} vs ${fixture.participant2Name} — ${getStatusLabel(fixture)}`}
       className="group relative block overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:translate-y-[-1px]"
     >
       {/* Live top accent */}
@@ -135,4 +137,4 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
       </div>
     </Link>
   );
-}
+});

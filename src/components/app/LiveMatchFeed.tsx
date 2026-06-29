@@ -66,7 +66,7 @@ export default function LiveMatchFeed() {
           {events.length}
         </span>
       </div>
-      <div className="max-h-[420px] overflow-y-auto p-3">
+      <div className="max-h-[420px] overflow-y-auto p-3" role="log" aria-label="Match events" aria-live="polite">
         {events.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10">
             <div className="h-8 w-8 rounded-full border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">

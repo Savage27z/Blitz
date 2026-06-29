@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   const fixtureId = req.nextUrl.searchParams.get("fixtureId");
+  if (fixtureId && !/^\d+$/.test(fixtureId)) {
+    return new Response("Invalid fixtureId", { status: 400 });
+  }
   const url = fixtureId
     ? `${base}/api/scores/stream?fixtureId=${fixtureId}`
     : `${base}/api/scores/stream`;

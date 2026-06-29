@@ -15,7 +15,7 @@ export default function Navbar() {
     <motion.header
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1.2, delay: 2.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 1.2, delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
       className="fixed top-5 left-1/2 z-50 -translate-x-1/2"
     >
       <nav

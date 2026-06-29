@@ -28,7 +28,7 @@ interface MarketStoreState {
   updateMatchState: (phase: GameState, minute: number, score: [number, number]) => void;
   updateMatchStats: (stats: Partial<MatchStats>) => void;
   addMarket: (market: MicroMarket) => void;
-  settleMarket: (marketId: string, result: 0 | 1, proofTxHash?: string) => void;
+  settleMarket: (marketId: string, result: 0 | 1 | null, proofTxHash?: string) => void;
   stakeOnMarket: (marketId: string, outcome: 0 | 1, amount: number) => void;
   lockMarket: (marketId: string) => void;
 }

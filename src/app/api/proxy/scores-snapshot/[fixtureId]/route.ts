@@ -15,6 +15,9 @@ export async function GET(
   }
 
   const { fixtureId } = await params;
+  if (!/^\d+$/.test(fixtureId)) {
+    return NextResponse.json({ error: "Invalid fixtureId" }, { status: 400 });
+  }
 
   try {
     const jwt = await getValidJwt();

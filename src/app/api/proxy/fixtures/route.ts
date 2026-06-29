@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
   }
 
   const competitionId = req.nextUrl.searchParams.get("competitionId");
+  if (competitionId && !/^\d+$/.test(competitionId)) {
+    return NextResponse.json({ error: "Invalid competitionId" }, { status: 400 });
+  }
   const url = competitionId
     ? `${base}/api/fixtures/snapshot?competitionId=${competitionId}`
     : `${base}/api/fixtures/snapshot`;

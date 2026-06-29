@@ -64,18 +64,30 @@ export default function AppPage() {
       </div>
 
       {loading && (
-        <div className="flex flex-col items-center gap-4 py-20">
-          <div className="flex items-center gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                className="h-1.5 w-1.5 rounded-full bg-amber-primary"
-              />
-            ))}
-          </div>
-          <span className="text-[0.8125rem] text-muted">Loading matches...</span>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-24 rounded bg-white/[0.06]" />
+                <div className="h-3 w-12 rounded bg-white/[0.06]" />
+              </div>
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-white/[0.06]" />
+                  <div className="h-4 w-20 rounded bg-white/[0.06]" />
+                </div>
+                <div className="h-8 w-16 rounded-lg bg-white/[0.06]" />
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-20 rounded bg-white/[0.06]" />
+                  <div className="h-10 w-10 rounded-xl bg-white/[0.06]" />
+                </div>
+              </div>
+              <div className="mt-5 h-3 w-32 rounded bg-white/[0.06]" />
+            </div>
+          ))}
         </div>
       )}
 

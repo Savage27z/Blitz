@@ -18,6 +18,9 @@ export async function GET(req: NextRequest) {
   if (!fixtureId || !seq || !statKey) {
     return NextResponse.json({ error: "Missing fixtureId, seq, or statKey" }, { status: 400 });
   }
+  if (!/^\d+$/.test(fixtureId) || !/^\d+$/.test(seq) || !/^[a-zA-Z0-9_-]+$/.test(statKey)) {
+    return NextResponse.json({ error: "Invalid parameter format" }, { status: 400 });
+  }
 
   const url = `${base}/api/scores/stat-validation?fixtureId=${fixtureId}&seq=${seq}&statKey=${statKey}`;
 

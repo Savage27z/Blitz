@@ -160,6 +160,8 @@ export default function ProfilePage() {
                           ? "bg-green-500/10 text-green-400"
                           : stake.status === "lost"
                           ? "bg-red-500/10 text-red-400"
+                          : stake.status === "void"
+                          ? "bg-yellow-500/10 text-yellow-400"
                           : "bg-white/[0.06] text-muted"
                       }`}
                     >
