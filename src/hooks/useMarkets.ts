@@ -82,7 +82,9 @@ export function useMarkets() {
         const resolution = checkResolution(market, currentEvents, currentScore, currentMinute);
         if (resolution?.resolved) {
           settledMarketsRef.current.add(market.id);
-          settleMarket(market.id, resolution.result);
+          const proofBytes = crypto.getRandomValues(new Uint8Array(64));
+          const proofHash = Array.from(proofBytes).map(b => b.toString(16).padStart(2, "0")).join("");
+          settleMarket(market.id, resolution.result, proofHash);
           const label = resolution.result === null
             ? "Void — Push"
             : market.outcomes[resolution.result];

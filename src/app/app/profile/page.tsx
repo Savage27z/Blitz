@@ -32,21 +32,70 @@ export default function ProfilePage() {
   };
 
   if (!publicKey) {
+    const demoStakes = [
+      { question: "Next goal: France or Sweden?", outcomeLabel: "France", status: "won" as const, amount: 5, time: "2 min ago" },
+      { question: "Another card before 73'?", outcomeLabel: "Yes", status: "active" as const, amount: 2, time: "5 min ago" },
+      { question: "Over 2.5 total goals by end of half?", outcomeLabel: "No", status: "lost" as const, amount: 10, time: "12 min ago" },
+      { question: "Next corner: England or Congo DR?", outcomeLabel: "England", status: "won" as const, amount: 3, time: "18 min ago" },
+    ];
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
-          <span className="text-2xl text-white/30">👤</span>
+      <div className="space-y-8">
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+            <span className="text-2xl text-white/30">👤</span>
+          </div>
+          <h1 className="font-display text-2xl text-offwhite">Your Profile</h1>
+          <p className="mt-2 max-w-sm text-[0.875rem] text-muted">
+            Connect your wallet to start staking on live prediction markets.
+          </p>
+          <button
+            onClick={() => setVisible(true)}
+            className="mt-6 rounded-full bg-amber-primary px-8 py-3 text-[0.875rem] font-semibold text-warm-dark transition-all hover:brightness-110"
+          >
+            Connect Wallet
+          </button>
         </div>
-        <h1 className="font-display text-2xl text-offwhite">Your Profile</h1>
-        <p className="mt-2 max-w-sm text-[0.875rem] text-muted">
-          Connect your wallet to view your stakes, transaction history, and activity.
-        </p>
-        <button
-          onClick={() => setVisible(true)}
-          className="mt-8 rounded-full bg-amber-primary px-8 py-3 text-[0.875rem] font-semibold text-warm-dark transition-all hover:brightness-110"
-        >
-          Connect Wallet
-        </button>
+
+        {/* Demo preview */}
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-0 z-10 rounded-2xl bg-gradient-to-t from-warm-dark via-transparent to-transparent" />
+          <div className="opacity-50">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { label: "Total Staked", value: "20.00 USDT" },
+                { label: "Win Rate", value: "67%" },
+                { label: "Total Trades", value: "4" },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+                  <p className="text-[0.65rem] font-medium uppercase tracking-widest text-white/40">{stat.label}</p>
+                  <p className="mt-2 font-mono text-2xl font-bold text-offwhite">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+              <div className="border-b border-white/[0.06] px-6 py-4">
+                <h2 className="text-[0.875rem] font-semibold text-offwhite">Recent Activity</h2>
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                {demoStakes.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between gap-4 px-6 py-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[0.875rem] font-medium text-offwhite">{s.question}</p>
+                      <div className="mt-1 flex items-center gap-3">
+                        <span className="rounded-full bg-amber-primary/10 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-primary">{s.outcomeLabel}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${
+                          s.status === "won" ? "bg-green-500/10 text-green-400" : s.status === "lost" ? "bg-red-500/10 text-red-400" : "bg-white/[0.06] text-muted"
+                        }`}>{s.status}</span>
+                        <span className="text-[0.65rem] text-muted">{s.time}</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[0.875rem] font-semibold text-offwhite">{formatUsdt(s.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

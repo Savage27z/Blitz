@@ -49,9 +49,12 @@ export default function SettledMarkets() {
                       rel="noopener noreferrer"
                       className="text-[0.625rem] text-amber-primary hover:underline"
                     >
-                      View proof →
+                      Merkle proof →
                     </a>
                   )}
+                  <span className="text-[0.55rem] text-white/20">
+                    Settled on Solana in &lt;2s
+                  </span>
                 </div>
               </div>
             </motion.div>

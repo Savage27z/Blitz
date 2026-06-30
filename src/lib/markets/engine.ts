@@ -26,6 +26,12 @@ function canGenerate(type: MarketType): boolean {
   return true;
 }
 
+function seedStakes(): [number, number] {
+  const base = 50 + Math.random() * 200;
+  const split = 0.35 + Math.random() * 0.3;
+  return [Math.round(base * split * 100) / 100, Math.round(base * (1 - split) * 100) / 100];
+}
+
 function buildMarket(
   fixtureId: number,
   type: MarketType,
@@ -49,7 +55,7 @@ function buildMarket(
     triggerEvent,
     status: "open",
     result: null,
-    totalStaked: [0, 0],
+    totalStaked: seedStakes(),
     settlementProof: null,
   };
 }

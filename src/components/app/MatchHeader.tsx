@@ -73,12 +73,12 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
       {/* Score section */}
       <div className="relative mt-8 flex items-center justify-between">
         {/* Team 1 */}
-        <div className="flex flex-1 items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner">
-            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team1Name} size={40} />}
+        <div className="flex flex-1 items-center gap-2 overflow-hidden sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner sm:h-14 sm:w-14">
+            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team1Name} size={36} />}
           </div>
-          <div>
-            <p className={`text-[1.125rem] font-semibold tracking-tight text-offwhite ${isLoading ? "animate-pulse text-white/30" : ""}`}>
+          <div className="min-w-0">
+            <p className={`truncate text-[0.9375rem] font-semibold tracking-tight text-offwhite sm:text-[1.125rem] ${isLoading ? "animate-pulse text-white/30" : ""}`}>
               {isLoading ? "Loading…" : team1Name}
             </p>
             {!isLoading && <p className="mt-0.5 text-[0.65rem] text-white/30">Home</p>}
@@ -86,13 +86,13 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
         </div>
 
         {/* Score */}
-        <div className="mx-4 flex items-center gap-1">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-black/40 px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="mx-2 flex shrink-0 items-center gap-1 sm:mx-4">
+          <div className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-black/40 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:gap-3 sm:px-6">
             {isLive || isCompleted ? (
               <>
-                <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[0]}</span>
+                <span className="font-mono text-3xl font-bold tabular-nums text-offwhite sm:text-4xl">{score[0]}</span>
                 <span className="text-lg text-white/20">–</span>
-                <span className="font-mono text-4xl font-bold tabular-nums text-offwhite">{score[1]}</span>
+                <span className="font-mono text-3xl font-bold tabular-nums text-offwhite sm:text-4xl">{score[1]}</span>
               </>
             ) : (
               <span className="font-display text-2xl text-white/40">vs</span>
@@ -101,15 +101,15 @@ export default function MatchHeader({ loading = false }: { loading?: boolean }) 
         </div>
 
         {/* Team 2 */}
-        <div className="flex flex-1 items-center justify-end gap-4">
-          <div className="text-right">
-            <p className={`text-[1.125rem] font-semibold tracking-tight text-offwhite ${isLoading ? "animate-pulse text-white/30" : ""}`}>
+        <div className="flex flex-1 items-center justify-end gap-2 overflow-hidden sm:gap-4">
+          <div className="min-w-0 text-right">
+            <p className={`truncate text-[0.9375rem] font-semibold tracking-tight text-offwhite sm:text-[1.125rem] ${isLoading ? "animate-pulse text-white/30" : ""}`}>
               {isLoading ? "Loading…" : team2Name}
             </p>
             {!isLoading && <p className="mt-0.5 text-[0.65rem] text-white/30">Away</p>}
           </div>
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner">
-            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team2Name} size={40} />}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] shadow-inner sm:h-14 sm:w-14">
+            {isLoading ? <span className="text-white/30">…</span> : <Flag team={team2Name} size={36} />}
           </div>
         </div>
       </div>
