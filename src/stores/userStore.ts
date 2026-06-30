@@ -58,7 +58,16 @@ export const useUserStore = create<UserStoreState>((set, get) => ({
   },
 
   loadStakes: (wallet) => {
-    const filtered = readAll().filter((s) => s.wallet === wallet);
+    const now = Date.now();
+    const ORPHAN_MS = 30 * 60 * 1000;
+    const all = readAll().map((s) => {
+      if (s.status === "active" && now - s.timestamp > ORPHAN_MS) {
+        return { ...s, status: "void" as const };
+      }
+      return s;
+    });
+    writeAll(all);
+    const filtered = all.filter((s) => s.wallet === wallet);
     set({ stakes: filtered });
     return filtered;
   },
