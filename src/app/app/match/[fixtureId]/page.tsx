@@ -141,18 +141,22 @@ export default function MatchPage() {
 
   const handleDemoToggle = () => {
     const next = !demoMode;
-    if (next) {
-      useMarketStore.getState().setConnected(false);
-      resetEngine();
-      useMarketStore.setState({
-        score: [0, 0],
-        gamePhase: "NS",
-        matchMinute: 0,
-        events: [],
-        activeMarkets: [],
-        settledMarkets: [],
-      });
-    }
+    useMarketStore.getState().setConnected(false);
+    resetEngine();
+    useMarketStore.setState({
+      score: [0, 0],
+      gamePhase: "NS",
+      matchMinute: 0,
+      events: [],
+      activeMarkets: [],
+      settledMarkets: [],
+      matchStats: {
+        possession: 50,
+        shotsOnTarget: [0, 0],
+        corners: [0, 0],
+        cards: [0, 0],
+      },
+    });
     setDemoMode(next);
   };
 
