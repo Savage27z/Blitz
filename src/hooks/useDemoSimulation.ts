@@ -77,8 +77,29 @@ export function useDemoSimulation(enabled: boolean) {
         newScore[event.team - 1]++;
       }
 
+      const stats = { ...state.matchStats };
+      const ti = event.team - 1;
+      if (event.type === "corner") {
+        const c = [...stats.corners] as [number, number];
+        c[ti]++;
+        stats.corners = c;
+      } else if (event.type === "yellow_card" || event.type === "red_card") {
+        const ca = [...stats.cards] as [number, number];
+        ca[ti]++;
+        stats.cards = ca;
+      } else if (event.type === "danger") {
+        const sot = [...stats.shotsOnTarget] as [number, number];
+        if (event.detail === "HighDanger") sot[ti]++;
+        stats.shotsOnTarget = sot;
+      } else if (event.type === "possession") {
+        stats.possession = event.team === 1
+          ? Math.min(65, stats.possession + 3)
+          : Math.max(35, stats.possession - 3);
+      }
+
       state.addEvent(event);
       state.updateMatchState(phase, newMinute, newScore);
+      state.updateMatchStats(stats);
 
       indexRef.current++;
     };
