@@ -60,6 +60,7 @@ export default function MatchPage() {
 
     setFixtureLoaded(false);
     setFixtureMeta(null);
+    setDemoMode(false);
     resetEngine();
     const store = useMarketStore.getState();
     store.setFixtureInfo(fixtureId, "…", "…");
@@ -114,18 +115,18 @@ export default function MatchPage() {
   useFixtureSnapshot(fixtureId, fixtureMeta?.startTime);
 
   const isCompleted = gamePhase === "F" || gamePhase === "FET" || gamePhase === "FPE";
-  const isLiveMatch = LIVE_PHASES.includes(gamePhase as (typeof LIVE_PHASES)[number]);
-  const effectiveDemo = demoMode && !isLiveMatch;
+  const isLivePhase = LIVE_PHASES.includes(gamePhase as (typeof LIVE_PHASES)[number]);
+  const isRealLive = isLivePhase && connected && !demoMode;
 
   useEffect(() => {
-    if (demoMode && isLiveMatch) setDemoMode(false);
-  }, [demoMode, isLiveMatch]);
+    if (demoMode && connected) setDemoMode(false);
+  }, [demoMode, connected]);
 
-  useScoresStream(effectiveDemo ? null : fixtureId);
+  useScoresStream(demoMode ? null : fixtureId);
   useMarkets();
-  useDemoSimulation(effectiveDemo);
+  useDemoSimulation(demoMode);
 
-  const showDemoToggle = !isCompleted && !isLiveMatch;
+  const showDemoToggle = !isCompleted && !isRealLive;
 
   if (!fixtureId) {
     return (
@@ -142,6 +143,15 @@ export default function MatchPage() {
     const next = !demoMode;
     if (next) {
       useMarketStore.getState().setConnected(false);
+      resetEngine();
+      useMarketStore.setState({
+        score: [0, 0],
+        gamePhase: "NS",
+        matchMinute: 0,
+        events: [],
+        activeMarkets: [],
+        settledMarkets: [],
+      });
     }
     setDemoMode(next);
   };
@@ -149,13 +159,13 @@ export default function MatchPage() {
   const isKickoffWindow =
     fixtureMeta != null &&
     getFixtureCategory(fixtureMeta) === "live" &&
-    !LIVE_PHASES.includes(gamePhase as (typeof LIVE_PHASES)[number]);
+    !isLivePhase;
 
   return (
     <div className="space-y-6">
       <MatchHeader loading={!fixtureLoaded} />
 
-      {isKickoffWindow && (
+      {isKickoffWindow && !demoMode && (
         <div className="rounded-xl border border-amber-primary/20 bg-amber-primary/[0.06] px-4 py-2.5 text-center text-[0.75rem] text-amber-primary/90">
           {connected
             ? "Kickoff — TxODDS feed connected, waiting for first live event…"
@@ -163,7 +173,7 @@ export default function MatchPage() {
         </div>
       )}
 
-      {isLiveMatch && (
+      {isRealLive && (
         <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-2.5 text-center text-[0.75rem] text-red-300">
           Live match — real TxODDS feed active. Demo mode disabled.
         </div>
