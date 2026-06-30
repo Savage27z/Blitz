@@ -36,11 +36,16 @@ function loadArchive(): Fixture[] {
 
 function saveArchive(fixtures: Fixture[]) {
   if (typeof window === "undefined") return;
-  const completed = fixtures.filter((f) => getFixtureCategory(f) === "completed");
+  const worth = fixtures.filter((f) => {
+    const cat = getFixtureCategory(f);
+    return cat === "completed" || cat === "live";
+  });
   const byId = new Map<number, Fixture>();
   loadArchive().forEach((f) => byId.set(f.fixtureId, f));
-  completed.forEach((f) => byId.set(f.fixtureId, f));
-  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(Array.from(byId.values())));
+  worth.forEach((f) => byId.set(f.fixtureId, f));
+  const all = Array.from(byId.values());
+  const trimmed = all.sort((a, b) => b.startTime - a.startTime).slice(0, 50);
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(trimmed));
 }
 
 function mergeWithArchive(incoming: Fixture[]): Fixture[] {
