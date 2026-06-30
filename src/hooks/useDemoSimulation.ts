@@ -42,6 +42,15 @@ export function useDemoSimulation(enabled: boolean) {
 
     if (!enabled) {
       indexRef.current = 0;
+      useMarketStore.setState({
+        gamePhase: "NS",
+        matchMinute: 0,
+        score: [0, 0] as [number, number],
+        events: [],
+        activeMarkets: [],
+        settledMarkets: [],
+        matchStats: { possession: 50, shotsOnTarget: [0, 0], corners: [0, 0], cards: [0, 0] },
+      });
       return;
     }
 
